@@ -24,7 +24,7 @@ export default function App() {
   const [simulating, setSimulating] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
 
-  const API_BASE = 'http://localhost:3000/api/v1';
+  const API_BASE = 'http://localhost:3001/api/v1';
 
   // Seed sample mock incidents if backend DB is empty
   const defaultIncidents: Incident[] = [
@@ -101,7 +101,7 @@ export default function App() {
         }
       }
     } catch {
-      alert('Simulation triggered! (Make sure NestJS backend is running on http://localhost:3000)');
+      alert('Simulation triggered! (Make sure NestJS backend is running on http://localhost:3001)');
     } finally {
       setSimulating(false);
     }
