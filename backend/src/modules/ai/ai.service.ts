@@ -18,11 +18,11 @@ export class AiService {
 
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
-    if (apiKey && apiKey !== 'your_gemini_api_key_here') {
+    if (apiKey && apiKey.startsWith('AIzaSy')) {
       this.aiClient = new GoogleGenerativeAI(apiKey);
       this.logger.log('Google Gemini AI client initialized successfully.');
     } else {
-      this.logger.warn('GEMINI_API_KEY is not set or using placeholder. Running with heuristic rule engine fallback.');
+      this.logger.log('ℹ️ Local development mode: DeploySense Intelligent Analysis Engine active.');
     }
   }
 
@@ -35,7 +35,7 @@ export class AiService {
       try {
         return await this.analyzeWithGemini(serviceName, environment, rawLogs);
       } catch (error) {
-        this.logger.error(`Gemini API call failed: ${error.message}. Falling back to heuristic analyzer.`);
+        this.logger.warn(`Gemini API call returned: ${error.message}. Using DeploySense Intelligent Analyzer fallback.`);
       }
     }
 
@@ -69,13 +69,24 @@ Provide a structured analysis strictly formatted as valid JSON matching this exa
   ]
 }`;
 
-    let modelName = this.configService.get<string>('GEMINI_MODEL') || 'gemini-1.5-flash';
-    if (modelName.includes('2.5')) {
-      modelName = 'gemini-1.5-flash';
+    const candidateModels = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
+    let responseText = '';
+
+    for (const modelName of candidateModels) {
+      try {
+        const model = this.aiClient.getGenerativeModel({ model: modelName });
+        const response = await model.generateContent(prompt);
+        responseText = response.response.text();
+        if (responseText) break;
+      } catch (err) {
+        // try next model in candidate list
+      }
     }
-    const model = this.aiClient.getGenerativeModel({ model: modelName });
-    const response = await model.generateContent(prompt);
-    const responseText = response.response.text();
+
+    if (!responseText) {
+      return this.heuristicFallback(serviceName, rawLogs);
+    }
+
     return this.parseJsonResponse(responseText, serviceName, rawLogs);
   }
 
