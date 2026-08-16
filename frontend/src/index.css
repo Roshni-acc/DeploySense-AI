@@ -111,3 +111,12 @@ code, pre {
   70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 242, 254, 0); }
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 242, 254, 0); }
 }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}

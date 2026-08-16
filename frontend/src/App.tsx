@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Activity, ShieldAlert, Cpu, Terminal, RefreshCw, 
-  CheckCircle2, AlertTriangle, Play, Zap, ArrowRight, X, ExternalLink
+  CheckCircle2, AlertTriangle, Play, Zap, ArrowRight, X, ExternalLink,
+  Database, MemoryStick, Settings, Loader2
 } from 'lucide-react';
 
 interface Incident {
@@ -18,10 +19,13 @@ interface Incident {
   createdAt: string;
 }
 
+type SimType = 'db_timeout' | 'memory_leak' | 'missing_config' | null;
+
 export default function App() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(false);
-  const [simulating, setSimulating] = useState(false);
+  const [refreshComplete, setRefreshComplete] = useState(false);
+  const [simulatingType, setSimulatingType] = useState<SimType>(null);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
 
   const API_BASE = 'http://localhost:3001/api/v1';
@@ -66,8 +70,13 @@ export default function App() {
 
   const fetchIncidents = async () => {
     setLoading(true);
+    setRefreshComplete(false);
     try {
-      const res = await fetch(`${API_BASE}/incidents`);
+      // Artificial minimum 800ms for visual feedback
+      const [res] = await Promise.all([
+        fetch(`${API_BASE}/incidents`),
+        new Promise((r) => setTimeout(r, 800)),
+      ]);
       if (res.ok) {
         const data = await res.json();
         setIncidents(data.length > 0 ? data : defaultIncidents);
@@ -78,6 +87,8 @@ export default function App() {
       setIncidents(defaultIncidents);
     } finally {
       setLoading(false);
+      setRefreshComplete(true);
+      setTimeout(() => setRefreshComplete(false), 2000);
     }
   };
 
@@ -85,13 +96,18 @@ export default function App() {
     fetchIncidents();
   }, []);
 
-  const triggerSimulation = async (type: string) => {
-    setSimulating(true);
+  const triggerSimulation = async (type: SimType) => {
+    setSimulatingType(type);
     try {
+      const serviceMap: Record<string, string> = {
+        db_timeout: 'payment-service',
+        memory_leak: 'analytics-worker',
+        missing_config: 'auth-service',
+      };
       const res = await fetch(`${API_BASE}/logs/simulate-failure`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ failureType: type, serviceName: type === 'db_timeout' ? 'payment-service' : type === 'memory_leak' ? 'analytics-worker' : 'auth-service' }),
+        body: JSON.stringify({ failureType: type, serviceName: serviceMap[type!] }),
       });
       if (res.ok) {
         const result = await res.json();
@@ -103,8 +119,44 @@ export default function App() {
     } catch {
       alert('Simulation triggered! (Make sure NestJS backend is running on http://localhost:3001)');
     } finally {
-      setSimulating(false);
+      setSimulatingType(null);
     }
+  };
+
+  const simButtons = [
+    {
+      type: 'db_timeout' as SimType,
+      label: 'Simulate DB Connection',
+      sublabel: 'PostgreSQL ECONNREFUSED',
+      icon: Database,
+      color: '#f87171',
+      bg: 'rgba(239, 68, 68, 0.15)',
+      border: 'rgba(239, 68, 68, 0.3)',
+    },
+    {
+      type: 'memory_leak' as SimType,
+      label: 'Simulate OOM Failure',
+      sublabel: 'Container Exit 137 / OOMKilled',
+      icon: MemoryStick,
+      color: '#fb923c',
+      bg: 'rgba(249, 115, 22, 0.15)',
+      border: 'rgba(249, 115, 22, 0.3)',
+    },
+    {
+      type: 'missing_config' as SimType,
+      label: 'Simulate Missing Env Config',
+      sublabel: 'Undefined ENV variable',
+      icon: Settings,
+      color: '#facc15',
+      bg: 'rgba(234, 179, 8, 0.15)',
+      border: 'rgba(234, 179, 8, 0.3)',
+    },
+  ];
+
+  const formatTime = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString('en-IN', { hour12: true, day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    } catch { return iso; }
   };
 
   return (
@@ -119,7 +171,7 @@ export default function App() {
             <h1 style={{ fontSize: '1.8rem', fontWeight: 700, letterSpacing: '-0.5px' }}>
               Deploy<span className="gradient-text">Sense</span>
             </h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>AI-Powered CI/CD & Deployment Incident-Response Platform</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>AI-Powered CI/CD &amp; Deployment Incident-Response Platform</p>
           </div>
         </div>
 
@@ -129,9 +181,41 @@ export default function App() {
             <span>Gemini AI Engine Active</span>
           </div>
 
-          <button onClick={fetchIncidents} className="glass-panel" style={{ padding: '8px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', color: '#fff' }}>
-            <RefreshCw size={16} className={loading ? 'spin' : ''} />
-            Refresh
+          <button
+            id="refresh-incidents-btn"
+            onClick={fetchIncidents}
+            disabled={loading}
+            className="glass-panel"
+            style={{
+              padding: '8px 20px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              color: refreshComplete ? '#10b981' : '#fff',
+              opacity: loading ? 0.8 : 1,
+              transition: 'all 0.3s ease',
+              minWidth: '120px',
+              justifyContent: 'center',
+              border: refreshComplete ? '1px solid rgba(16, 185, 129, 0.4)' : undefined,
+            }}
+          >
+            {loading ? (
+              <>
+                <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                <span style={{ fontSize: '0.85rem' }}>Loading...</span>
+              </>
+            ) : refreshComplete ? (
+              <>
+                <CheckCircle2 size={16} color="#10b981" />
+                <span style={{ fontSize: '0.85rem' }}>Updated!</span>
+              </>
+            ) : (
+              <>
+                <RefreshCw size={16} />
+                <span style={{ fontSize: '0.85rem' }}>Refresh</span>
+              </>
+            )}
           </button>
         </div>
       </header>
@@ -182,44 +266,53 @@ export default function App() {
 
       {/* PIPELINE SIMULATION CONTROLS */}
       <div className="glass-panel" style={{ padding: '24px', marginBottom: '32px', borderLeft: '4px solid var(--accent-cyan)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Play size={18} color="#00f2fe" /> Test End-to-End Pipeline & AI Diagnosis
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-              Simulate real deployment failure log streams to trigger Gemini AI root-cause analysis and alert notifications.
-            </p>
-          </div>
+        <div style={{ marginBottom: '20px' }}>
+          <h3 style={{ fontSize: '1.1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Play size={18} color="#00f2fe" /> Test End-to-End Pipeline &amp; AI Diagnosis
+          </h3>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+            Simulate real deployment failure log streams to trigger Gemini AI root-cause analysis and email alert notifications.
+          </p>
+        </div>
 
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <button 
-              disabled={simulating}
-              onClick={() => triggerSimulation('db_timeout')}
-              className="glass-panel" 
-              style={{ padding: '10px 16px', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', cursor: 'pointer', borderRadius: '8px', fontWeight: 600 }}
-            >
-              Simulate DB Connection Timeout
-            </button>
-
-            <button 
-              disabled={simulating}
-              onClick={() => triggerSimulation('memory_leak')}
-              className="glass-panel" 
-              style={{ padding: '10px 16px', background: 'rgba(249, 115, 22, 0.15)', color: '#fb923c', border: '1px solid rgba(249, 115, 22, 0.3)', cursor: 'pointer', borderRadius: '8px', fontWeight: 600 }}
-            >
-              Simulate Container OOM Failure
-            </button>
-
-            <button 
-              disabled={simulating}
-              onClick={() => triggerSimulation('missing_config')}
-              className="glass-panel" 
-              style={{ padding: '10px 16px', background: 'rgba(234, 179, 8, 0.15)', color: '#facc15', border: '1px solid rgba(234, 179, 8, 0.3)', cursor: 'pointer', borderRadius: '8px', fontWeight: 600 }}
-            >
-              Simulate Missing Env Config
-            </button>
-          </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
+          {simButtons.map(({ type, label, sublabel, icon: Icon, color, bg, border }) => {
+            const isRunning = simulatingType === type;
+            const anyRunning = simulatingType !== null;
+            return (
+              <button
+                key={type}
+                id={`simulate-${type}-btn`}
+                disabled={anyRunning}
+                onClick={() => triggerSimulation(type)}
+                style={{
+                  padding: '14px 18px',
+                  background: bg,
+                  color,
+                  border: `1px solid ${border}`,
+                  cursor: anyRunning ? 'not-allowed' : 'pointer',
+                  borderRadius: '12px',
+                  fontWeight: 600,
+                  textAlign: 'left',
+                  transition: 'all 0.2s ease',
+                  opacity: anyRunning && !isRunning ? 0.5 : 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {isRunning ? (
+                    <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                  ) : (
+                    <Icon size={16} />
+                  )}
+                  <span style={{ fontSize: '0.9rem' }}>{isRunning ? 'Analyzing...' : label}</span>
+                </div>
+                <span style={{ fontSize: '0.75rem', opacity: 0.75, fontWeight: 400 }}>{sublabel}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -227,6 +320,7 @@ export default function App() {
       <div className="glass-panel" style={{ padding: '24px' }}>
         <h2 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <AlertTriangle size={20} color="#f97316" /> Detected Deployment Incidents
+          {loading && <Loader2 size={16} color="var(--text-muted)" style={{ animation: 'spin 1s linear infinite', marginLeft: '8px' }} />}
         </h2>
 
         <div style={{ overflowX: 'auto' }}>
@@ -238,12 +332,23 @@ export default function App() {
                 <th style={{ padding: '12px 16px' }}>AI Confidence</th>
                 <th style={{ padding: '12px 16px' }}>Root Cause</th>
                 <th style={{ padding: '12px 16px' }}>Status</th>
+                <th style={{ padding: '12px 16px' }}>Time</th>
                 <th style={{ padding: '12px 16px', textAlign: 'right' }}>Action</th>
               </tr>
             </thead>
             <tbody>
+              {incidents.length === 0 && !loading && (
+                <tr>
+                  <td colSpan={7} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    No incidents detected. Use the simulation buttons above to test your pipeline.
+                  </td>
+                </tr>
+              )}
               {incidents.map((inc) => (
-                <tr key={inc.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                <tr key={inc.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.15s' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
                   <td style={{ padding: '16px' }}>
                     <div style={{ fontWeight: 600 }}>{inc.serviceName}</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{inc.environment}</div>
@@ -251,19 +356,28 @@ export default function App() {
                   <td style={{ padding: '16px' }}>
                     <span className={`badge badge-${inc.severity.toLowerCase()}`}>{inc.severity}</span>
                   </td>
-                  <td style={{ padding: '16px', fontWeight: 600, color: '#00f2fe' }}>
-                    {inc.aiConfidence}%
+                  <td style={{ padding: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: '48px', height: '4px', borderRadius: '4px', background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                        <div style={{ width: `${inc.aiConfidence}%`, height: '100%', background: inc.aiConfidence >= 90 ? '#10b981' : '#facc15', borderRadius: '4px' }} />
+                      </div>
+                      <span style={{ fontWeight: 600, color: '#00f2fe', fontSize: '0.85rem' }}>{inc.aiConfidence}%</span>
+                    </div>
                   </td>
-                  <td style={{ padding: '16px', maxWidth: '340px' }}>
+                  <td style={{ padding: '16px', maxWidth: '300px' }}>
                     <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inc.rootCause}</div>
                   </td>
                   <td style={{ padding: '16px' }}>
                     <span className={`badge ${inc.status === 'RESOLVED' ? 'badge-success' : 'badge-high'}`}>{inc.status}</span>
                   </td>
+                  <td style={{ padding: '16px', fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                    {formatTime(inc.createdAt)}
+                  </td>
                   <td style={{ padding: '16px', textAlign: 'right' }}>
-                    <button 
+                    <button
+                      id={`view-incident-${inc.id}-btn`}
                       onClick={() => setSelectedIncident(inc)}
-                      className="gradient-btn" 
+                      className="gradient-btn"
                       style={{ fontSize: '0.8rem', padding: '6px 12px' }}
                     >
                       View AI Diagnostics <ArrowRight size={14} />
@@ -284,18 +398,29 @@ export default function App() {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span className={`badge badge-${selectedIncident.severity.toLowerCase()}`}>{selectedIncident.severity}</span>
-                  <span className="badge badge-low">AI Confidence: {selectedIncident.aiConfidence}%</span>
+                  <span className="badge badge-low" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    🤖 AI Confidence: {selectedIncident.aiConfidence}%
+                  </span>
                 </div>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '8px' }}>{selectedIncident.serviceName} Failure Report</h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Incident ID: {selectedIncident.id}</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Incident ID: {selectedIncident.id} · {selectedIncident.environment}</p>
               </div>
 
-              <button onClick={() => setSelectedIncident(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}>
+              <button id="close-diagnostics-btn" onClick={() => setSelectedIncident(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}>
                 <X size={24} />
               </button>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* AI Confidence Bar */}
+              <div style={{ padding: '12px 16px', borderRadius: '10px', background: 'rgba(0,242,254,0.05)', border: '1px solid rgba(0,242,254,0.15)', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>AI Confidence</span>
+                <div style={{ flex: 1, height: '6px', borderRadius: '6px', background: 'rgba(255,255,255,0.1)' }}>
+                  <div style={{ width: `${selectedIncident.aiConfidence}%`, height: '100%', background: 'linear-gradient(90deg, #00f2fe, #4facfe)', borderRadius: '6px', transition: 'width 0.6s ease' }} />
+                </div>
+                <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#00f2fe' }}>{selectedIncident.aiConfidence}%</span>
+              </div>
+
               <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
                 <h4 style={{ color: '#f87171', fontSize: '0.9rem', marginBottom: '6px', fontWeight: 600 }}>🤖 AI Root Cause Summary</h4>
                 <p style={{ fontSize: '0.95rem', lineHeight: '1.5' }}>{selectedIncident.rootCause}</p>
@@ -308,7 +433,7 @@ export default function App() {
 
               <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(0, 242, 254, 0.05)', border: '1px solid rgba(0, 242, 254, 0.2)' }}>
                 <h4 style={{ color: '#00f2fe', fontSize: '0.9rem', marginBottom: '8px', fontWeight: 600 }}>🛠️ Recommended Remediation</h4>
-                <pre style={{ background: '#070a10', padding: '12px', borderRadius: '8px', color: '#34d399', fontSize: '0.85rem', overflowX: 'auto' }}>
+                <pre style={{ background: '#070a10', padding: '12px', borderRadius: '8px', color: '#34d399', fontSize: '0.85rem', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                   {selectedIncident.suggestedFix}
                 </pre>
               </div>
@@ -326,7 +451,7 @@ export default function App() {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
-                <button onClick={() => setSelectedIncident(null)} className="gradient-btn">
+                <button id="close-modal-btn" onClick={() => setSelectedIncident(null)} className="gradient-btn">
                   Close Diagnostics
                 </button>
               </div>
