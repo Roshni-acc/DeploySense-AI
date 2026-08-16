@@ -1,0 +1,104 @@
+// Prisma Schema for DeploySense
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DeploymentStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IncidentStatus {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+  CLOSED
+}
+
+enum NotificationChannel {
+  SLACK
+  EMAIL
+  WEBHOOK
+}
+
+enum NotificationStatus {
+  SENT
+  FAILED
+}
+
+model Deployment {
+  id          String           @id @default(uuid())
+  serviceName String
+  version     String
+  environment String           @default("production")
+  status      DeploymentStatus @default(PENDING)
+  startedAt   DateTime         @default(now())
+  finishedAt  DateTime?
+  createdAt   DateTime         @default(now())
+
+  logs      LogEntry[]
+  incidents Incident[]
+
+  @@map("deployments")
+}
+
+model LogEntry {
+  id           String     @id @default(uuid())
+  deploymentId String
+  deployment   Deployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+  logLevel     String     @default("ERROR")
+  message      String     @db.Text
+  source       String     @default("ci-pipeline")
+  timestamp    DateTime   @default(now())
+
+  @@map("log_entries")
+}
+
+model Incident {
+  id                 String           @id @default(uuid())
+  deploymentId       String
+  deployment         Deployment       @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+  serviceName        String
+  environment        String           @default("production")
+  status             IncidentStatus   @default(OPEN)
+  severity           IncidentSeverity @default(HIGH)
+  rootCause          String           @db.Text
+  likelyCause        String           @db.Text
+  aiConfidence       Float            @default(0.0)
+  suggestedFix       String           @db.Text
+  recommendedActions String[]
+  rawLogSnippet      String           @db.Text
+  createdAt          DateTime         @default(now())
+
+  notifications NotificationLog[]
+
+  @@map("incidents")
+}
+
+model NotificationLog {
+  id         String              @id @default(uuid())
+  incidentId String
+  incident   Incident            @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  channel    NotificationChannel
+  status     NotificationStatus  @default(SENT)
+  recipient  String
+  payload    String?             @db.Text
+  sentAt     DateTime            @default(now())
+
+  @@map("notification_logs")
+}

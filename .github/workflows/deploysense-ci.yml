@@ -1,0 +1,47 @@
+name: DeploySense CI/CD & Automated Monitoring
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'backend/package.json'
+
+      - name: Install Dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Build Application
+        run: |
+          cd backend
+          npm run build
+
+      - name: Notify DeploySense on Failure
+        if: failure()
+        env:
+          DEPLOYSENSE_WEBHOOK: ${{ secrets.DEPLOYSENSE_WEBHOOK_URL }}
+        run: |
+          echo "Pipeline step failed! Sending telemetry to DeploySense AI..."
+          curl -X POST "${DEPLOYSENSE_WEBHOOK:-http://localhost:3000/api/v1/webhooks/github}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "repository": "${{ github.repository }}",
+              "workflow": "${{ github.workflow }}",
+              "status": "failure",
+              "logs": "ERROR Build Step Failed: Missing or invalid environment variable in build pipeline."
+            }'
