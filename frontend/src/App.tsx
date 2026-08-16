@@ -173,11 +173,10 @@ export default function App() {
             <Terminal size={18} color="#4facfe" />
           </div>
           <div style={{ fontSize: '1.2rem', fontWeight: 600, marginTop: '8px', display: 'flex', gap: '8px' }}>
-            <span className="badge badge-low">Slack</span>
-            <span className="badge badge-low">Email</span>
-            <span className="badge badge-low">Webhook</span>
+            <span className="badge badge-success">Email Direct</span>
+            <span className="badge badge-low">CC / BCC</span>
           </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '6px' }}>Multi-channel dispatch</div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '6px' }}>Incident alerts via Email</div>
         </div>
       </div>
 
