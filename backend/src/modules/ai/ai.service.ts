@@ -69,7 +69,10 @@ Provide a structured analysis strictly formatted as valid JSON matching this exa
   ]
 }`;
 
-    const modelName = this.configService.get<string>('GEMINI_MODEL') || 'gemini-1.5-flash';
+    let modelName = this.configService.get<string>('GEMINI_MODEL') || 'gemini-1.5-flash';
+    if (modelName.includes('2.5')) {
+      modelName = 'gemini-1.5-flash';
+    }
     const model = this.aiClient.getGenerativeModel({ model: modelName });
     const response = await model.generateContent(prompt);
     const responseText = response.response.text();
