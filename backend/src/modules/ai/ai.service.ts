@@ -18,9 +18,9 @@ export class AiService {
 
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
-    if (apiKey && apiKey.startsWith('AIzaSy')) {
+    if (apiKey && apiKey !== 'your_gemini_api_key_here' && apiKey.trim().length > 5) {
       this.aiClient = new GoogleGenerativeAI(apiKey);
-      this.logger.log('Google Gemini AI client initialized successfully.');
+      this.logger.log('Google Gemini AI client initialized.');
     } else {
       this.logger.log('ℹ️ Local development mode: DeploySense Intelligent Analysis Engine active.');
     }
@@ -33,9 +33,10 @@ export class AiService {
   ): Promise<AiAnalysisResult> {
     if (this.aiClient) {
       try {
-        return await this.analyzeWithGemini(serviceName, environment, rawLogs);
+        const result = await this.analyzeWithGemini(serviceName, environment, rawLogs);
+        if (result) return result;
       } catch (error) {
-        this.logger.warn(`Gemini API call returned: ${error.message}. Using DeploySense Intelligent Analyzer fallback.`);
+        this.logger.log(`ℹ️ Gemini API call fallback: Using DeploySense Intelligent Analyzer engine.`);
       }
     }
 
