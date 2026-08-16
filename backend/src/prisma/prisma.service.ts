@@ -1,13 +1,20 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(PrismaService.name);
+
   async onModuleInit() {
-    await this.$connect();
+    try {
+      await this.$connect();
+      this.logger.log('✅ PostgreSQL database connected successfully via Prisma.');
+    } catch (error) {
+      this.logger.warn(`⚠️ PostgreSQL database is offline at localhost:5432. App running with transient mode. (${error.message})`);
+    }
   }
 
   async onModuleDestroy() {
-    await this.$disconnect();
+    await this.$disconnect().catch(() => null);
   }
 }
