@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Activity, ShieldAlert, Cpu, Terminal, RefreshCw, 
-  CheckCircle2, AlertTriangle, Play, Zap, ArrowRight, X, ExternalLink,
-  Database, MemoryStick, Settings, Loader2
+  CheckCircle2, AlertTriangle, Play, Zap, ArrowRight, X,
+  Database, MemoryStick, Settings, Loader2, ShieldCheck, Clock
 } from 'lucide-react';
 
 interface Incident {
@@ -17,6 +17,7 @@ interface Incident {
   suggestedFix: string;
   recommendedActions: string[];
   createdAt: string;
+  resolvedAt?: string | null;
 }
 
 type SimType = 'db_timeout' | 'memory_leak' | 'missing_config' | null;
@@ -27,10 +28,10 @@ export default function App() {
   const [refreshComplete, setRefreshComplete] = useState(false);
   const [simulatingType, setSimulatingType] = useState<SimType>(null);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
 
   const API_BASE = 'http://localhost:3001/api/v1';
 
-  // Seed sample mock incidents if backend DB is empty
   const defaultIncidents: Incident[] = [
     {
       id: 'inc-demo-101',
@@ -48,6 +49,7 @@ export default function App() {
         'Check database connection pool limits'
       ],
       createdAt: new Date().toISOString(),
+      resolvedAt: null,
     },
     {
       id: 'inc-demo-102',
@@ -65,6 +67,7 @@ export default function App() {
         'Enable Node.js memory profiling'
       ],
       createdAt: new Date(Date.now() - 3600000).toISOString(),
+      resolvedAt: new Date(Date.now() - 1800000).toISOString(),
     }
   ];
 
@@ -72,9 +75,8 @@ export default function App() {
     setLoading(true);
     setRefreshComplete(false);
     try {
-      // Artificial minimum 800ms for visual feedback
       const [res] = await Promise.all([
-        fetch(`${API_BASE}/incidents`),
+        fetch(`${API_BASE}/logs/incidents`),
         new Promise((r) => setTimeout(r, 800)),
       ]);
       if (res.ok) {
@@ -95,6 +97,57 @@ export default function App() {
   useEffect(() => {
     fetchIncidents();
   }, []);
+
+  const markAsFixed = async (incidentId: string) => {
+    setResolvingId(incidentId);
+    try {
+      const res = await fetch(`${API_BASE}/logs/incidents/${incidentId}/resolve`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const resolvedAt = new Date().toISOString();
+      if (res.ok) {
+        // Update local state instantly for UX
+        setIncidents((prev) =>
+          prev.map((inc) =>
+            inc.id === incidentId
+              ? { ...inc, status: 'CLOSED', resolvedAt }
+              : inc
+          )
+        );
+        if (selectedIncident?.id === incidentId) {
+          setSelectedIncident((prev) => prev ? { ...prev, status: 'CLOSED', resolvedAt } : null);
+        }
+      } else {
+        // Still update UI optimistically if DB is offline (transient mode)
+        setIncidents((prev) =>
+          prev.map((inc) =>
+            inc.id === incidentId
+              ? { ...inc, status: 'CLOSED', resolvedAt }
+              : inc
+          )
+        );
+        if (selectedIncident?.id === incidentId) {
+          setSelectedIncident((prev) => prev ? { ...prev, status: 'CLOSED', resolvedAt } : null);
+        }
+      }
+    } catch {
+      // Optimistic update even on network error
+      const resolvedAt = new Date().toISOString();
+      setIncidents((prev) =>
+        prev.map((inc) =>
+          inc.id === incidentId
+            ? { ...inc, status: 'CLOSED', resolvedAt }
+            : inc
+        )
+      );
+      if (selectedIncident?.id === incidentId) {
+        setSelectedIncident((prev) => prev ? { ...prev, status: 'CLOSED', resolvedAt } : null);
+      }
+    } finally {
+      setResolvingId(null);
+    }
+  };
 
   const triggerSimulation = async (type: SimType) => {
     setSimulatingType(type);
@@ -155,9 +208,17 @@ export default function App() {
 
   const formatTime = (iso: string) => {
     try {
-      return new Date(iso).toLocaleString('en-IN', { hour12: true, day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+      return new Date(iso).toLocaleString('en-IN', {
+        hour12: true,
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
     } catch { return iso; }
   };
+
+  const isFixed = (inc: Incident) => inc.status === 'CLOSED' || inc.status === 'RESOLVED';
 
   return (
     <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
@@ -244,11 +305,13 @@ export default function App() {
 
         <div className="glass-panel" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-            <span>AI Mean Diagnosis Time</span>
-            <Zap size={18} color="#e100ff" />
+            <span>Fixed / Closed</span>
+            <ShieldCheck size={18} color="#10b981" />
           </div>
-          <div style={{ fontSize: '2rem', fontWeight: 700, marginTop: '8px' }}>0.84s</div>
-          <div style={{ fontSize: '0.8rem', color: '#10b981', marginTop: '4px' }}>Automated stack parsing</div>
+          <div style={{ fontSize: '2rem', fontWeight: 700, marginTop: '8px', color: '#34d399' }}>
+            {incidents.filter((i) => i.status === 'CLOSED' || i.status === 'RESOLVED').length}
+          </div>
+          <div style={{ fontSize: '0.8rem', color: '#10b981', marginTop: '4px' }}>Resolved incidents</div>
         </div>
 
         <div className="glass-panel" style={{ padding: '20px' }}>
@@ -271,7 +334,7 @@ export default function App() {
             <Play size={18} color="#00f2fe" /> Test End-to-End Pipeline &amp; AI Diagnosis
           </h3>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '6px' }}>
-            Simulate real deployment failure log streams to trigger Gemini AI root-cause analysis and email alert notifications.
+            Simulate real deployment failure log streams to trigger AI root-cause analysis and email alert notifications.
           </p>
         </div>
 
@@ -333,19 +396,25 @@ export default function App() {
                 <th style={{ padding: '12px 16px' }}>Root Cause</th>
                 <th style={{ padding: '12px 16px' }}>Status</th>
                 <th style={{ padding: '12px 16px' }}>Time</th>
-                <th style={{ padding: '12px 16px', textAlign: 'right' }}>Action</th>
+                <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {incidents.length === 0 && !loading && (
                 <tr>
                   <td colSpan={7} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                    No incidents detected. Use the simulation buttons above to test your pipeline.
+                    No incidents detected. Use simulation buttons above to test the pipeline.
                   </td>
                 </tr>
               )}
               {incidents.map((inc) => (
-                <tr key={inc.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.15s' }}
+                <tr
+                  key={inc.id}
+                  style={{
+                    borderBottom: '1px solid var(--border-color)',
+                    transition: 'background 0.15s',
+                    opacity: isFixed(inc) ? 0.7 : 1,
+                  }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
@@ -364,24 +433,61 @@ export default function App() {
                       <span style={{ fontWeight: 600, color: '#00f2fe', fontSize: '0.85rem' }}>{inc.aiConfidence}%</span>
                     </div>
                   </td>
-                  <td style={{ padding: '16px', maxWidth: '300px' }}>
+                  <td style={{ padding: '16px', maxWidth: '280px' }}>
                     <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inc.rootCause}</div>
+                    {inc.resolvedAt && (
+                      <div style={{ fontSize: '0.72rem', color: '#34d399', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Clock size={11} /> Fixed: {formatTime(inc.resolvedAt)}
+                      </div>
+                    )}
                   </td>
                   <td style={{ padding: '16px' }}>
-                    <span className={`badge ${inc.status === 'RESOLVED' ? 'badge-success' : 'badge-high'}`}>{inc.status}</span>
+                    <span className={`badge ${isFixed(inc) ? 'badge-success' : 'badge-high'}`}>
+                      {isFixed(inc) ? '✓ FIXED' : inc.status}
+                    </span>
                   </td>
                   <td style={{ padding: '16px', fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                     {formatTime(inc.createdAt)}
                   </td>
                   <td style={{ padding: '16px', textAlign: 'right' }}>
-                    <button
-                      id={`view-incident-${inc.id}-btn`}
-                      onClick={() => setSelectedIncident(inc)}
-                      className="gradient-btn"
-                      style={{ fontSize: '0.8rem', padding: '6px 12px' }}
-                    >
-                      View AI Diagnostics <ArrowRight size={14} />
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                      {!isFixed(inc) && (
+                        <button
+                          id={`mark-fixed-${inc.id}-btn`}
+                          onClick={() => markAsFixed(inc.id)}
+                          disabled={resolvingId === inc.id}
+                          style={{
+                            padding: '6px 12px',
+                            background: 'rgba(16, 185, 129, 0.15)',
+                            color: '#34d399',
+                            border: '1px solid rgba(16, 185, 129, 0.4)',
+                            borderRadius: '8px',
+                            cursor: resolvingId === inc.id ? 'not-allowed' : 'pointer',
+                            fontSize: '0.78rem',
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            transition: 'all 0.2s ease',
+                          }}
+                        >
+                          {resolvingId === inc.id ? (
+                            <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
+                          ) : (
+                            <ShieldCheck size={12} />
+                          )}
+                          {resolvingId === inc.id ? 'Fixing...' : 'Mark Fixed'}
+                        </button>
+                      )}
+                      <button
+                        id={`view-incident-${inc.id}-btn`}
+                        onClick={() => setSelectedIncident(inc)}
+                        className="gradient-btn"
+                        style={{ fontSize: '0.78rem', padding: '6px 12px' }}
+                      >
+                        AI Diagnostics <ArrowRight size={13} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -396,14 +502,24 @@ export default function App() {
           <div className="glass-panel" style={{ width: '100%', maxWidth: '750px', maxHeight: '90vh', overflowY: 'auto', padding: '32px', borderRadius: '20px', background: '#0e1320' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <span className={`badge badge-${selectedIncident.severity.toLowerCase()}`}>{selectedIncident.severity}</span>
-                  <span className="badge badge-low" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    🤖 AI Confidence: {selectedIncident.aiConfidence}%
-                  </span>
+                  <span className="badge badge-low">🤖 AI Confidence: {selectedIncident.aiConfidence}%</span>
+                  {isFixed(selectedIncident) && (
+                    <span className="badge badge-success" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <ShieldCheck size={12} /> FIXED
+                    </span>
+                  )}
                 </div>
                 <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '8px' }}>{selectedIncident.serviceName} Failure Report</h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Incident ID: {selectedIncident.id} · {selectedIncident.environment}</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  Incident ID: {selectedIncident.id} · {selectedIncident.environment}
+                </p>
+                {selectedIncident.resolvedAt && (
+                  <p style={{ color: '#34d399', fontSize: '0.82rem', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <Clock size={13} /> Resolved at: {formatTime(selectedIncident.resolvedAt)}
+                  </p>
+                )}
               </div>
 
               <button id="close-diagnostics-btn" onClick={() => setSelectedIncident(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}>
@@ -450,7 +566,41 @@ export default function App() {
                 </ul>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px' }}>
+              {/* Bottom actions */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', flexWrap: 'wrap', gap: '12px' }}>
+                {!isFixed(selectedIncident) && (
+                  <button
+                    id="modal-mark-fixed-btn"
+                    onClick={() => markAsFixed(selectedIncident.id)}
+                    disabled={resolvingId === selectedIncident.id}
+                    style={{
+                      padding: '10px 20px',
+                      background: 'rgba(16, 185, 129, 0.15)',
+                      color: '#34d399',
+                      border: '1px solid rgba(16, 185, 129, 0.5)',
+                      borderRadius: '10px',
+                      cursor: resolvingId === selectedIncident.id ? 'not-allowed' : 'pointer',
+                      fontWeight: 600,
+                      fontSize: '0.9rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    {resolvingId === selectedIncident.id ? (
+                      <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                    ) : (
+                      <ShieldCheck size={16} />
+                    )}
+                    {resolvingId === selectedIncident.id ? 'Marking as Fixed...' : '✓ Mark as Fixed'}
+                  </button>
+                )}
+                {isFixed(selectedIncident) && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#34d399', fontSize: '0.9rem' }}>
+                    <ShieldCheck size={18} />
+                    <span>Incident marked as fixed{selectedIncident.resolvedAt ? ` · ${formatTime(selectedIncident.resolvedAt)}` : ''}</span>
+                  </div>
+                )}
                 <button id="close-modal-btn" onClick={() => setSelectedIncident(null)} className="gradient-btn">
                   Close Diagnostics
                 </button>

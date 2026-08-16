@@ -84,6 +84,7 @@ model Incident {
   recommendedActions String[]
   rawLogSnippet      String           @db.Text
   createdAt          DateTime         @default(now())
+  resolvedAt         DateTime?
 
   notifications NotificationLog[]
 
