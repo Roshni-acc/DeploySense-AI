@@ -53,10 +53,10 @@ This guide provides step-by-step instructions for deploying both the **DeploySen
    | `DATABASE_URL` | `postgresql://...` *(from Step 1)* | Managed Postgres URI |
    | `GEMINI_API_KEY` | `AIzaSy...` *(your Gemini Key)* | AI Root Cause Analyzer |
    | `PORT` | `10000` | Port assigned by Render |
-   | `ALERT_EMAIL_TO` | `admin@example.com` | Primary alert recipient |
+   | `ALERT_EMAIL_TO` | `admin@example.com` | Fallback alert recipient (used if external project doesn't specify `recipientEmail`) |
    | `ALERT_EMAIL_CC` | `devops@example.com` | Secondary CC alert recipient |
    | `ALERT_EMAIL_BCC` | `logs@example.com` | Hidden BCC log archive recipient |
-   | `SMTP_HOST` | `smtp.gmail.com` *(optional)* | SMTP Server |
+   | `SMTP_HOST` | `smtp.gmail.com` *(optional)* | SMTP Server (for delivering CI/CD failure emails) |
    | `SMTP_USER` | `your_email@gmail.com` *(optional)* | SMTP Username |
    | `SMTP_PASS` | `your_app_password` *(optional)* | SMTP Password |
    | `SMTP_PORT` | `587` *(optional)* | SMTP Port |

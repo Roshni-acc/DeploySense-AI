@@ -53,6 +53,10 @@ Unlike traditional CI/CD pipelines that simply fail and output raw, unparsed ter
 ## 🔥 Key Features
 
 - **🌐 Universal Multi-Language SDK & Guide**: Language-agnostic log ingestion endpoint (`POST /api/v1/logs/ingest`) with interactive UI code samples for **Node.js/TypeScript**, **Python**, **Go (Golang)**, and **cURL/Bash CI/CD**.
+- **✉️ Dynamic Per-Project Email Alerts**: Integration snippets support an optional `"recipientEmail"` parameter so external repositories receive alerts directly in their team inbox without modifying central backend settings.
+- **📊 Categorized Failure Tracking**:
+  - **🛠️ CI/CD Build Failures (`BUILD`)**: Ingested from GitHub Actions / CI pipelines. Dispatches AI root-cause diagnostic email alerts to `recipientEmail`.
+  - **🚀 Deployment Failures (`DEPLOYMENT`)**: Ingested from runtime container/server logs. Dispatches AI root-cause diagnostic email alerts to `recipientEmail`.
 - **⚡ Automated Log Ingestion**: Ingests deployment logs from GitHub Actions, webhooks, or custom container monitors.
 - **🤖 AI-Powered Root Cause Analysis**: Leverages Google Gemini AI to analyze raw stack traces, connection errors, and missing environment flags.
 - **🎯 Actionable Remediation**: Generates human-readable cause summaries, severity rankings (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), and exact fix commands.

@@ -84,8 +84,8 @@ export class LogsService {
             data: { status: 'FAILED', finishedAt: new Date() },
           });
 
-          // 5. Dispatch Notifications
-          notificationResults = await this.notificationsService.dispatchIncidentAlerts(incident);
+          // 5. Dispatch Notifications (For ALL Failure Incidents: DEPLOYMENT & BUILD)
+          notificationResults = await this.notificationsService.dispatchIncidentAlerts(incident, dto.recipientEmail);
 
           // Log notification status in DB
           for (const res of notificationResults) {
@@ -94,7 +94,7 @@ export class LogsService {
                 incidentId: incident.id,
                 channel: res.channel as any,
                 status: res.success ? 'SENT' : 'FAILED',
-                recipient: 'system-alert-channel',
+                recipient: dto.recipientEmail || 'system-alert-channel',
               },
             }).catch(() => null);
           }
@@ -123,7 +123,7 @@ export class LogsService {
           createdAt: new Date(),
         };
 
-        notificationResults = [{ channel: 'CONSOLE', success: true }];
+        notificationResults = await this.notificationsService.dispatchIncidentAlerts(incidentReport as any, dto.recipientEmail);
       }
     } else {
       // Successful deployment

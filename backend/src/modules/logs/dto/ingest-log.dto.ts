@@ -20,6 +20,10 @@ export class IngestLogDto {
   @IsString()
   @IsOptional()
   source?: string;
+
+  @IsString()
+  @IsOptional()
+  recipientEmail?: string;
 }
 
 export class GitHubWebhookDto {

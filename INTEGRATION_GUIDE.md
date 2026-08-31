@@ -21,15 +21,27 @@ Content-Type: application/json
   "environment": "production",
   "version": "v1.2.3",
   "source": "ci-pipeline",
+  "recipientEmail": "dev-team@yourdomain.com",
   "logs": "your raw log output here..."
 }
 ```
 
 DeploySense will automatically:
 1. ✅ Detect failure patterns in your logs
-2. 🤖 Run AI root-cause analysis
-3. 💾 Save the incident to the database
-4. 📧 Send an email alert to your team
+2. 🤖 Run AI root-cause analysis & calculate confidence score
+3. 💾 Save the incident under either **🚀 Deployment Failures** or **🛠️ CI/CD Build Failures** tab
+4. 📧 Send an HTML email alert to `recipientEmail` (or global `ALERT_EMAIL_TO`) for any failure incident
+
+---
+
+## 📊 Understanding Dashboard Incident Categories
+
+DeploySense classifies incidents into two distinct tabs:
+
+| Tab | Category | Description | Email Triggered? |
+|-----|----------|-------------|------------------|
+| **🛠️ CI/CD Build Failures** | `BUILD` | Failures during GitHub Actions, linting, compilation, Docker builds, or automated test pipelines. | **YES** 📧 (Dispatches diagnostic email alert to `recipientEmail`) |
+| **🚀 Deployment Failures** | `DEPLOYMENT` | Runtime / production crashes (e.g. database `ECONNREFUSED`, `OOMKilled` memory leaks, unhandled web exceptions). | **YES** 📧 (Dispatches diagnostic email alert to `recipientEmail`) |
 
 ---
 

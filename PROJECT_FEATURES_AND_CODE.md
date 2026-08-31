@@ -86,19 +86,23 @@ Allows developers to trigger 3 real-world deployment failure scenarios directly 
 
 ### 4. Automated Multi-Channel Email Alerting Engine
 - Powered by **Nodemailer** with configurable SMTP host, port, authentication, `ALERT_EMAIL_TO`, `ALERT_EMAIL_CC`, and `ALERT_EMAIL_BCC`.
+- **Dynamic Per-Project Recipient (`recipientEmail`)**: The `IngestLogDto` accepts an optional `recipientEmail` field. If provided by an external CI pipeline or SDK integration, DeploySense routes alert emails directly to that specific team/developer inbox.
+- **Universal Failure Email Dispatch**: Email notifications are automatically dispatched for **ALL failure incidents** (both `DEPLOYMENT` runtime crashes and `BUILD` CI/CD failures).
 - **HTML Email Template Builder**: Generates rich, color-coded diagnostic alert emails containing severity tags, root cause summaries, and code fix boxes.
 - **Terminal Simulation Mode**: When SMTP credentials are not set, alerts are logged into the backend console in standard email header format without throwing errors.
 
-### 5. Incident Lifecycle & Resolution Management
+### 5. Categorized Incident Tabs & Lifecycle Management
+- **🚀 Deployment Failures Tab (`DEPLOYMENT`)**: Tracks runtime container/server crashes (e.g. database `ECONNREFUSED`, `OOMKilled` memory leaks, unhandled web exceptions). Triggers automated diagnostic email alerts.
+- **🛠️ CI/CD Build Failures Tab (`BUILD`)**: Tracks automated pipeline failures during GitHub Actions, linting, compilation, or test suites. Triggers automated diagnostic email alerts.
 - Incidents progress through status states: `OPEN` ➔ `INVESTIGATING` ➔ `RESOLVED` ➔ `CLOSED`.
 - Clicking **"Mark Fixed"** in the dashboard or modal popup instantly updates the backend database via `PATCH /api/v1/logs/incidents/:id/resolve`, sets `resolvedAt` timestamps, and strikes out the incident visually.
 
 ### 6. GitHub Actions & Webhook Integration
-- Exposes `POST /api/v1/webhooks/github` to receive push/workflow_run webhooks directly from GitHub repositories.
+- Exposes `POST /api/v1/webhooks/github` and GitHub Actions cURL triggers to receive build failure logs directly from any GitHub repository.
 - Automatically extracts workflow names, repository details, head SHA commits, and build log URLs to create automated incident logs.
 
 ### 7. Universal Multi-Language SDK Ingestion (Node, Python, Go, cURL)
-- **Language-Agnostic Ingestion Endpoint**: `POST /api/v1/logs/ingest`.
+- **Language-Agnostic Ingestion Endpoint**: `POST /api/v1/logs/ingest` (accepts `serviceName`, `environment`, `version`, `logs`, `source`, and `recipientEmail`).
 - **Interactive UI Guide**: Features a language dropdown select and visual tabs for **Node.js/TypeScript**, **Python**, **Go (Golang)**, and **cURL/Bash**.
 - Includes a **Copy Code** button and an interactive **"Test Ingest API"** button that sends live log payloads from the selected language directly to the backend.
 

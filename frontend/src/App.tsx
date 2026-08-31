@@ -370,6 +370,7 @@ jobs:
               "serviceName": "\${{ github.repository }}",
               "version": "\${{ github.sha }}",
               "environment": "github-actions-ci",
+              "recipientEmail": "dev-team@yourdomain.com",
               "logs": "[ERROR] Entire project CI pipeline failed on branch \${{ github.ref_name }} for commit \${{ github.sha }}. Automatic AI root-cause analysis triggered.",
               "source": "github-actions-workflow"
             }'`

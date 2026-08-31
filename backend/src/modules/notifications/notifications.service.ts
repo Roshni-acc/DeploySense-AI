@@ -36,9 +36,9 @@ export class NotificationsService {
     }
   }
 
-  async dispatchIncidentAlerts(incident: IncidentAlertPayload): Promise<{ channel: string; success: boolean }[]> {
+  async dispatchIncidentAlerts(incident: IncidentAlertPayload, overrideRecipient?: string): Promise<{ channel: string; success: boolean }[]> {
     const results: { channel: string; success: boolean }[] = [];
-    const recipientEmail = this.configService.get<string>('ALERT_EMAIL_TO') || 'admin@example.com';
+    const recipientEmail = overrideRecipient || this.configService.get<string>('ALERT_EMAIL_TO') || 'admin@example.com';
     const ccEmail = this.configService.get<string>('ALERT_EMAIL_CC');
     const bccEmail = this.configService.get<string>('ALERT_EMAIL_BCC');
 
