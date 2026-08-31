@@ -310,22 +310,46 @@ func sendLogToDeploySense(logText string, serviceName string) {
 }`
     },
     curl: {
-      name: 'cURL / CI/CD (Entire Project Build & Test Logs)',
+      name: 'GitHub Actions / CI/CD (Universal Project Guard)',
       icon: '🐚',
-      desc: 'Add to GitHub Actions or CI pipeline script. Automatically captures all build, test, and container failure logs for your ENTIRE project repository!',
-      code: `# 🚀 Capture full build & test output logs for your ENTIRE project in GitHub Actions / Shell script
-npm test 2>&1 | tee project_build.log || {
-  echo "🔥 Project Build Failed! Sending full logs to DeploySense..."
-  curl -X POST "${API_BASE}/logs/ingest" \\
-    -H "Content-Type: application/json" \\
-    -d "{
-      \\"serviceName\\": \\"entire-project-ci-pipeline\\",
-      \\"version\\": \\"v1.0.0\\",
-      \\"environment\\": \\"ci-github-actions\\",
-      \\"logs\\": \\"\$(cat project_build.log | tr '\\n' ' ' | sed 's/\"/\\\\\"/g')\\",
-      \\"source\\": \\"ci-global-runner\\"
-    }"
-}`
+      desc: 'Save as .github/workflows/deploysense-ci.yml in ANY GitHub project. Automatically catches build, test, and container failures across your ENTIRE repository!',
+      code: `# Save as .github/workflows/deploysense-ci.yml in ANY project repository!
+# Automatically catches build, test & deployment failures across your ENTIRE project repository!
+name: DeploySense CI/CD Incident Guard
+
+on:
+  push:
+    branches: [ main, master, dev ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: Run Entire Project Build & Test Suite
+        run: |
+          # Replace with your project build/test command (npm test / pytest / go test / docker build)
+          npm install && npm test
+
+      # 🚨 AUTOMATIC DEPLOYSENSE INCIDENT RESPONSE ON FAILURE
+      - name: Trigger DeploySense AI Root-Cause Analysis on Failure
+        if: failure()
+        run: |
+          echo "🔥 Entire Project Build Failed! Dispatching logs to DeploySense AI..."
+          
+          curl -X POST "${API_BASE}/logs/ingest" \\
+            -H "Content-Type: application/json" \\
+            -d '{
+              "serviceName": "\${{ github.repository }}",
+              "version": "\${{ github.sha }}",
+              "environment": "github-actions-ci",
+              "logs": "[ERROR] Entire project CI pipeline failed on branch \${{ github.ref_name }} for commit \${{ github.sha }}. Automatic AI root-cause analysis triggered.",
+              "source": "github-actions-workflow"
+            }'`
     }
   };
 

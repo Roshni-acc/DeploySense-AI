@@ -1,0 +1,43 @@
+# 🚀 Universal DeploySense CI/CD Incident Guard Template
+# Copy this file to `.github/workflows/deploysense-ci.yml` in ANY GitHub repository/project!
+# It automatically catches ALL build, test, and container deployment failures across your ENTIRE project repository.
+
+name: DeploySense CI/CD Incident Guard
+
+on:
+  push:
+    branches: [ main, master, dev ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Run Entire Project Build & Test Suite
+        run: |
+          # 💡 Replace with your project build/test command:
+          # Node: npm install && npm test
+          # Python: pip install -r requirements.txt && pytest
+          # Go: go test ./...
+          # Docker: docker build -t my-app .
+          npm install && npm test
+
+      # 🚨 AUTOMATIC DEPLOYSENSE INCIDENT RESPONSE ON FAILURE
+      - name: Trigger DeploySense AI Root-Cause Analysis on Step Failure
+        if: failure()
+        run: |
+          echo "🔥 Entire Project Build Failed! Dispatching logs to DeploySense AI..."
+          
+          curl -X POST "https://your-deploysense-backend.onrender.com/api/v1/logs/ingest" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "serviceName": "${{ github.repository }}",
+              "version": "${{ github.sha }}",
+              "environment": "github-actions-ci",
+              "logs": "[ERROR] Project CI/CD pipeline failed on branch ${{ github.ref_name }} for commit ${{ github.sha }}. Automatic AI root-cause analysis triggered.",
+              "source": "github-actions-workflow"
+            }'
