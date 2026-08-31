@@ -40,61 +40,22 @@ export default function App() {
 
   const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
 
-  const defaultIncidents: Incident[] = [
-    {
-      id: 'inc-demo-101',
-      serviceName: 'payment-service',
-      environment: 'production',
-      status: 'OPEN',
-      severity: 'HIGH',
-      rootCause: 'PaymentService could not establish a PostgreSQL connection on port 5432.',
-      likelyCause: 'The database service container was unready or restarting during the deployment roll-out.',
-      aiConfidence: 94,
-      suggestedFix: 'Add a wait-for-it health check container entrypoint before launching PaymentService node application.',
-      recommendedActions: [
-        'Verify PostgreSQL container status with docker ps',
-        'Inspect DATABASE_URL environment secret',
-        'Check database connection pool limits'
-      ],
-      createdAt: new Date().toISOString(),
-      resolvedAt: null,
-    },
-    {
-      id: 'inc-demo-102',
-      serviceName: 'analytics-worker',
-      environment: 'staging',
-      status: 'RESOLVED',
-      severity: 'CRITICAL',
-      rootCause: 'JavaScript Heap Memory limit exceeded resulting in container OOMKilled (Exit 137).',
-      likelyCause: 'High throughput batch event payload caused rapid uncollected object allocation.',
-      aiConfidence: 91,
-      suggestedFix: 'Increase max_old_space_size flag to --max-old-space-size=4096 and enable memory garbage collection stats.',
-      recommendedActions: [
-        'Increase container RAM allocation from 2GB to 4GB',
-        'Audit large batch payload queries',
-        'Enable Node.js memory profiling'
-      ],
-      createdAt: new Date(Date.now() - 3600000).toISOString(),
-      resolvedAt: new Date(Date.now() - 1800000).toISOString(),
-    }
-  ];
-
   const fetchIncidents = async () => {
     setLoading(true);
     setRefreshComplete(false);
     try {
       const [res] = await Promise.all([
         fetch(`${API_BASE}/logs/incidents`),
-        new Promise((r) => setTimeout(r, 800)),
+        new Promise((r) => setTimeout(r, 600)),
       ]);
       if (res.ok) {
         const data = await res.json();
-        setIncidents(data.length > 0 ? data : defaultIncidents);
+        setIncidents(Array.isArray(data) ? data : []);
       } else {
-        setIncidents(defaultIncidents);
+        setIncidents([]);
       }
     } catch {
-      setIncidents(defaultIncidents);
+      setIncidents([]);
     } finally {
       setLoading(false);
       setRefreshComplete(true);
