@@ -36,6 +36,7 @@ export default function App() {
   const [copied, setCopied] = useState(false);
   const [sendingTestLog, setSendingTestLog] = useState(false);
   const [testLogStatus, setTestLogStatus] = useState<string | null>(null);
+  const [showSdkModal, setShowSdkModal] = useState(false);
 
   const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
 
@@ -400,6 +401,28 @@ curl -X POST "${API_BASE}/logs/ingest" \\
           </div>
 
           <button
+            id="open-sdk-guide-header-btn"
+            onClick={() => setShowSdkModal(true)}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '30px',
+              background: 'rgba(168, 85, 247, 0.15)',
+              color: '#e9d5ff',
+              border: '1px solid rgba(168, 85, 247, 0.4)',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <Code2 size={16} color="#a855f7" />
+            <span>Integration SDKs</span>
+          </button>
+
+          <button
             id="refresh-incidents-btn"
             onClick={fetchIncidents}
             disabled={loading}
@@ -536,165 +559,33 @@ curl -X POST "${API_BASE}/logs/ingest" \\
         </div>
       </div>
 
-      {/* UNIVERSAL MULTI-LANGUAGE INTEGRATION GUIDE SECTION */}
-      <div className="glass-panel" style={{ padding: '28px', marginBottom: '32px', borderLeft: '4px solid var(--accent-purple)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
-          <div>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Code2 size={22} color="#a855f7" /> Universal Project Integration (4 Languages SDK Guide)
-            </h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-              DeploySense is 100% language-agnostic. Select your tech stack below to get ready-to-use integration code.
-            </p>
-          </div>
-
-          {/* LANGUAGE SELECTOR DROPDOWN & TABS */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Select Language:</span>
-            
-            {/* Mobile / Direct Dropdown Select */}
-            <div style={{ position: 'relative' }}>
-              <select
-                id="language-select-dropdown"
-                value={selectedLang}
-                onChange={(e) => setSelectedLang(e.target.value as any)}
-                style={{
-                  padding: '10px 36px 10px 14px',
-                  background: '#131826',
-                  color: '#fff',
-                  border: '1px solid rgba(168, 85, 247, 0.4)',
-                  borderRadius: '10px',
-                  fontSize: '0.88rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  appearance: 'none',
-                  outline: 'none',
-                }}
-              >
-                <option value="nodejs">⚡ Node.js / TypeScript</option>
-                <option value="python">🐍 Python (Django/Flask/FastAPI)</option>
-                <option value="go">🐹 Go (Golang)</option>
-                <option value="curl">🐚 cURL / Bash CI/CD</option>
-              </select>
-              <ChevronDown size={16} color="#a855f7" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-            </div>
-          </div>
+      {/* COMPACT INTEGRATION BAR (Secondary shortcut trigger) */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', padding: '10px 18px', borderRadius: '12px', background: 'rgba(168, 85, 247, 0.08)', border: '1px solid rgba(168, 85, 247, 0.2)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <Code2 size={16} color="#a855f7" />
+          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e9d5ff' }}>Connect Your External Project</span>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>— Integration code snippets for Node.js, Python, Go &amp; cURL</span>
         </div>
-
-        {/* QUICK LANGUAGE TABS */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
-          {(['nodejs', 'python', 'go', 'curl'] as const).map((langKey) => {
-            const isSelected = selectedLang === langKey;
-            const snippet = codeSnippets[langKey];
-            return (
-              <button
-                key={langKey}
-                id={`select-lang-${langKey}-btn`}
-                onClick={() => setSelectedLang(langKey)}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '20px',
-                  background: isSelected ? 'rgba(168, 85, 247, 0.25)' : 'rgba(255,255,255,0.04)',
-                  color: isSelected ? '#e9d5ff' : 'var(--text-muted)',
-                  border: isSelected ? '1px solid rgba(168, 85, 247, 0.6)' : '1px solid var(--border-color)',
-                  fontWeight: isSelected ? 600 : 400,
-                  fontSize: '0.83rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                }}
-              >
-                <span>{snippet.icon}</span>
-                <span>{snippet.name}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* DESCRIPTION & API ENDPOINT BANNER */}
-        <div style={{ padding: '12px 16px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <p style={{ fontSize: '0.85rem', color: '#d1d5db' }}>
-            💡 {codeSnippets[selectedLang].desc}
-          </p>
-          <div style={{ fontSize: '0.78rem', padding: '4px 10px', borderRadius: '6px', background: 'rgba(0,242,254,0.1)', color: '#00f2fe', fontFamily: 'monospace' }}>
-            POST {API_BASE}/logs/ingest
-          </div>
-        </div>
-
-        {/* CODE WINDOW */}
-        <div style={{ borderRadius: '12px', background: '#070a10', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-          {/* CODE WINDOW HEADER */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: '#0e1320', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444' }} />
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b' }} />
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981' }} />
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginLeft: '8px', fontFamily: 'monospace' }}>
-                deploysense-integration-{selectedLang}.{selectedLang === 'python' ? 'py' : selectedLang === 'go' ? 'go' : selectedLang === 'curl' ? 'sh' : 'ts'}
-              </span>
-            </div>
-
-            <button
-              id="copy-code-btn"
-              onClick={() => handleCopyCode(codeSnippets[selectedLang].code)}
-              style={{
-                padding: '5px 12px',
-                background: copied ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.08)',
-                color: copied ? '#34d399' : '#fff',
-                border: copied ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(255,255,255,0.15)',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '0.78rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              {copied ? <Check size={14} color="#34d399" /> : <Copy size={14} />}
-              <span>{copied ? 'Copied!' : 'Copy Code'}</span>
-            </button>
-          </div>
-
-          {/* CODE PRE BLOCK */}
-          <pre style={{ margin: 0, padding: '18px', color: '#38bdf8', fontSize: '0.85rem', fontFamily: 'Fira Code, Consolas, monospace', lineHeight: '1.6', overflowX: 'auto' }}>
-            <code>{codeSnippets[selectedLang].code}</code>
-          </pre>
-        </div>
-
-        {/* BOTTOM ACTION: TEST INGESTION BUTTON & STATUS */}
-        <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <button
-            id={`test-ingest-${selectedLang}-btn`}
-            onClick={handleTestIngest}
-            disabled={sendingTestLog}
-            className="gradient-btn"
-            style={{
-              padding: '10px 20px',
-              fontSize: '0.85rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              opacity: sendingTestLog ? 0.7 : 1,
-              cursor: sendingTestLog ? 'not-allowed' : 'pointer',
-            }}
-          >
-            {sendingTestLog ? (
-              <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-            ) : (
-              <Send size={16} />
-            )}
-            <span>{sendingTestLog ? 'Sending Ingest Payload...' : `Test ${codeSnippets[selectedLang].name} Ingest API`}</span>
-          </button>
-
-          {testLogStatus && (
-            <div style={{ fontSize: '0.85rem', color: testLogStatus.includes('✅') ? '#34d399' : '#facc15', fontWeight: 500, padding: '6px 14px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)' }}>
-              {testLogStatus}
-            </div>
-          )}
-        </div>
+        <button
+          id="open-sdk-modal-bar-btn"
+          onClick={() => setShowSdkModal(true)}
+          style={{
+            padding: '5px 12px',
+            borderRadius: '8px',
+            background: 'rgba(168, 85, 247, 0.2)',
+            color: '#fff',
+            border: '1px solid rgba(168, 85, 247, 0.4)',
+            cursor: 'pointer',
+            fontSize: '0.78rem',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+          }}
+        >
+          <span>View SDKs</span>
+          <ArrowRight size={12} />
+        </button>
       </div>
 
       {/* INCIDENTS TABLE */}
@@ -923,6 +814,173 @@ curl -X POST "${API_BASE}/logs/ingest" \\
                   Close Diagnostics
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* UNIVERSAL MULTI-LANGUAGE INTEGRATION SDK MODAL */}
+      {showSdkModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 100, padding: '24px' }}>
+          <div className="glass-panel" style={{ width: '100%', maxWidth: '780px', maxHeight: '90vh', overflowY: 'auto', padding: '28px', borderRadius: '20px', background: '#0e1320' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Code2 size={24} color="#a855f7" /> Universal Project Integration (4 Languages SDK Guide)
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  DeploySense is 100% language-agnostic. Select your tech stack below to get ready-to-use integration code.
+                </p>
+              </div>
+              <button id="close-sdk-modal-btn" onClick={() => setShowSdkModal(false)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}>
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* LANGUAGE SELECTOR & TABS */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {(['nodejs', 'python', 'go', 'curl'] as const).map((langKey) => {
+                  const isSelected = selectedLang === langKey;
+                  const snippet = codeSnippets[langKey];
+                  return (
+                    <button
+                      key={langKey}
+                      id={`modal-select-lang-${langKey}-btn`}
+                      onClick={() => setSelectedLang(langKey)}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: '20px',
+                        background: isSelected ? 'rgba(168, 85, 247, 0.25)' : 'rgba(255,255,255,0.04)',
+                        color: isSelected ? '#e9d5ff' : 'var(--text-muted)',
+                        border: isSelected ? '1px solid rgba(168, 85, 247, 0.6)' : '1px solid var(--border-color)',
+                        fontWeight: isSelected ? 600 : 400,
+                        fontSize: '0.83rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <span>{snippet.icon}</span>
+                      <span>{snippet.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Dropdown Select */}
+              <div style={{ position: 'relative' }}>
+                <select
+                  id="modal-language-select-dropdown"
+                  value={selectedLang}
+                  onChange={(e) => setSelectedLang(e.target.value as any)}
+                  style={{
+                    padding: '8px 32px 8px 12px',
+                    background: '#131826',
+                    color: '#fff',
+                    border: '1px solid rgba(168, 85, 247, 0.4)',
+                    borderRadius: '10px',
+                    fontSize: '0.83rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    appearance: 'none',
+                    outline: 'none',
+                  }}
+                >
+                  <option value="nodejs">⚡ Node.js / TypeScript</option>
+                  <option value="python">🐍 Python (Django/Flask/FastAPI)</option>
+                  <option value="go">🐹 Go (Golang)</option>
+                  <option value="curl">🐚 cURL / Bash CI/CD</option>
+                </select>
+                <ChevronDown size={14} color="#a855f7" style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              </div>
+            </div>
+
+            {/* DESCRIPTION & API BANNER */}
+            <div style={{ padding: '12px 16px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <p style={{ fontSize: '0.85rem', color: '#d1d5db' }}>
+                💡 {codeSnippets[selectedLang].desc}
+              </p>
+              <div style={{ fontSize: '0.78rem', padding: '4px 10px', borderRadius: '6px', background: 'rgba(0,242,254,0.1)', color: '#00f2fe', fontFamily: 'monospace' }}>
+                POST {API_BASE}/logs/ingest
+              </div>
+            </div>
+
+            {/* CODE WINDOW */}
+            <div style={{ borderRadius: '12px', background: '#070a10', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: '#0e1320', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444' }} />
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b' }} />
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981' }} />
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginLeft: '8px', fontFamily: 'monospace' }}>
+                    deploysense-integration-{selectedLang}.{selectedLang === 'python' ? 'py' : selectedLang === 'go' ? 'go' : selectedLang === 'curl' ? 'sh' : 'ts'}
+                  </span>
+                </div>
+
+                <button
+                  id="modal-copy-code-btn"
+                  onClick={() => handleCopyCode(codeSnippets[selectedLang].code)}
+                  style={{
+                    padding: '5px 12px',
+                    background: copied ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.08)',
+                    color: copied ? '#34d399' : '#fff',
+                    border: copied ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '0.78rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  {copied ? <Check size={14} color="#34d399" /> : <Copy size={14} />}
+                  <span>{copied ? 'Copied!' : 'Copy Code'}</span>
+                </button>
+              </div>
+
+              <pre style={{ margin: 0, padding: '18px', color: '#38bdf8', fontSize: '0.85rem', fontFamily: 'Fira Code, Consolas, monospace', lineHeight: '1.6', overflowX: 'auto' }}>
+                <code>{codeSnippets[selectedLang].code}</code>
+              </pre>
+            </div>
+
+            {/* FOOTER ACTIONS */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <button
+                id={`modal-test-ingest-${selectedLang}-btn`}
+                onClick={handleTestIngest}
+                disabled={sendingTestLog}
+                className="gradient-btn"
+                style={{
+                  padding: '10px 20px',
+                  fontSize: '0.85rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  opacity: sendingTestLog ? 0.7 : 1,
+                  cursor: sendingTestLog ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {sendingTestLog ? (
+                  <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                ) : (
+                  <Send size={16} />
+                )}
+                <span>{sendingTestLog ? 'Sending Payload...' : `Test ${codeSnippets[selectedLang].name} Ingest API`}</span>
+              </button>
+
+              {testLogStatus && (
+                <div style={{ fontSize: '0.85rem', color: testLogStatus.includes('✅') ? '#34d399' : '#facc15', fontWeight: 500, padding: '6px 14px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)' }}>
+                  {testLogStatus}
+                </div>
+              )}
+
+              <button id="close-sdk-guide-modal-btn" onClick={() => setShowSdkModal(false)} className="gradient-btn" style={{ opacity: 0.8 }}>
+                Close Guide
+              </button>
             </div>
           </div>
         </div>
