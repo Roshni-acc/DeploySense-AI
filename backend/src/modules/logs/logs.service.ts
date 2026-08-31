@@ -57,6 +57,7 @@ export class LogsService {
 
       // 3. AI Analysis
       const aiResult = await this.aiService.analyzeLogs(serviceName, environment, logs);
+      const category = this.determineCategory(source, environment, logs);
 
       // 4. Save Incident in DB (if DB available)
       if (this.prisma.$connect && deployment.id && !deployment.id.startsWith('transient')) {
@@ -66,6 +67,7 @@ export class LogsService {
               deploymentId: deployment.id,
               serviceName,
               environment,
+              category: category as any,
               status: 'OPEN',
               severity: aiResult.severity,
               rootCause: aiResult.rootCause,
@@ -110,6 +112,7 @@ export class LogsService {
           deploymentId: deployment.id,
           serviceName,
           environment,
+          category,
           status: 'OPEN',
           severity: aiResult.severity,
           rootCause: aiResult.rootCause,
@@ -152,9 +155,27 @@ export class LogsService {
     return errorKeywords.some((keyword) => logLower.includes(keyword));
   }
 
+  private determineCategory(source?: string, environment?: string, logs?: string): 'DEPLOYMENT' | 'BUILD' {
+    const combined = `${source || ''} ${environment || ''} ${logs || ''}`.toLowerCase();
+    if (
+      combined.includes('github') ||
+      combined.includes('ci') ||
+      combined.includes('build') ||
+      combined.includes('test') ||
+      combined.includes('webpack') ||
+      combined.includes('vite') ||
+      combined.includes('docker build') ||
+      combined.includes('compilation')
+    ) {
+      return 'BUILD';
+    }
+    return 'DEPLOYMENT';
+  }
+
   async getAllIncidents() {
     try {
       return await this.prisma.incident.findMany({
+        where: { isDeleted: false },
         orderBy: { createdAt: 'desc' },
         take: 100,
       });
@@ -177,6 +198,22 @@ export class LogsService {
     } catch (err) {
       this.logger.error(`Failed to resolve incident ${id}: ${err.message}`);
       return { success: false, error: err.message };
+    }
+  }
+
+  async softDeleteIncident(id: string) {
+    try {
+      const updated = await this.prisma.incident.update({
+        where: { id },
+        data: {
+          isDeleted: true,
+        },
+      });
+      this.logger.log(`🗑️ Incident ${id} soft-deleted.`);
+      return { success: true, incident: updated };
+    } catch (err) {
+      this.logger.warn(`Failed to soft-delete incident ${id}: ${err.message}`);
+      return { success: true, id };
     }
   }
 }

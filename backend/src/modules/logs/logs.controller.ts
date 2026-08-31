@@ -58,6 +58,12 @@ export class LogsController {
   async resolveIncident(@Param('id') id: string) {
     return this.logsService.resolveIncident(id);
   }
+
+  @Patch('/incidents/:id/soft-delete')
+  @HttpCode(HttpStatus.OK)
+  async softDeleteIncidentPatch(@Param('id') id: string) {
+    return this.logsService.softDeleteIncident(id);
+  }
 }
 
 

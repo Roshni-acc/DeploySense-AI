@@ -3,13 +3,14 @@ import {
   Activity, ShieldAlert, Cpu, Terminal, RefreshCw, 
   CheckCircle2, AlertTriangle, Play, Zap, ArrowRight, X,
   Database, MemoryStick, Settings, Loader2, ShieldCheck, Clock,
-  Code2, Copy, Check, Send, Globe, ChevronDown
+  Code2, Copy, Check, Send, Globe, ChevronDown, Trash2, Filter, Layers
 } from 'lucide-react';
 
 interface Incident {
   id: string;
   serviceName: string;
   environment: string;
+  category?: 'DEPLOYMENT' | 'BUILD';
   status: 'OPEN' | 'INVESTIGATING' | 'RESOLVED' | 'CLOSED';
   severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   rootCause: string;
@@ -30,6 +31,10 @@ export default function App() {
   const [simulatingType, setSimulatingType] = useState<SimType>(null);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Category filter state
+  const [activeCategoryTab, setActiveCategoryTab] = useState<'ALL' | 'DEPLOYMENT' | 'BUILD'>('ALL');
 
   // Integration guide state
   const [selectedLang, setSelectedLang] = useState<'nodejs' | 'python' | 'go' | 'curl'>('nodejs');
@@ -127,6 +132,24 @@ export default function App() {
       }
     } finally {
       setResolvingId(null);
+    }
+  };
+
+  const softDeleteIncident = async (incidentId: string) => {
+    setDeletingId(incidentId);
+    try {
+      await fetch(`${API_BASE}/logs/incidents/${incidentId}/soft-delete`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch {
+      // Optimistic soft delete
+    } finally {
+      setIncidents((prev) => prev.filter((inc) => inc.id !== incidentId));
+      if (selectedIncident?.id === incidentId) {
+        setSelectedIncident(null);
+      }
+      setDeletingId(null);
     }
   };
 
@@ -621,18 +644,75 @@ jobs:
         </button>
       </div>
 
-      {/* INCIDENTS TABLE */}
+      {/* INCIDENTS TABLE WITH SUB-TABS FILTER */}
       <div className="glass-panel" style={{ padding: '24px' }}>
-        <h2 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <AlertTriangle size={20} color="#f97316" /> Detected Deployment Incidents
-          {loading && <Loader2 size={16} color="var(--text-muted)" style={{ animation: 'spin 1s linear infinite', marginLeft: '8px' }} />}
-        </h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+            <AlertTriangle size={20} color="#f97316" /> Detected Incidents
+            {loading && <Loader2 size={16} color="var(--text-muted)" style={{ animation: 'spin 1s linear infinite', marginLeft: '8px' }} />}
+          </h2>
+
+          {/* SUB-TABS CATEGORY FILTER */}
+          <div style={{ display: 'flex', gap: '8px', background: 'rgba(0,0,0,0.3)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+            <button
+              id="tab-filter-all"
+              onClick={() => setActiveCategoryTab('ALL')}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '8px',
+                background: activeCategoryTab === 'ALL' ? 'rgba(0,242,254,0.18)' : 'transparent',
+                color: activeCategoryTab === 'ALL' ? '#00f2fe' : 'var(--text-muted)',
+                border: activeCategoryTab === 'ALL' ? '1px solid rgba(0,242,254,0.4)' : '1px solid transparent',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              All ({incidents.length})
+            </button>
+            <button
+              id="tab-filter-deployment"
+              onClick={() => setActiveCategoryTab('DEPLOYMENT')}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '8px',
+                background: activeCategoryTab === 'DEPLOYMENT' ? 'rgba(0,242,254,0.18)' : 'transparent',
+                color: activeCategoryTab === 'DEPLOYMENT' ? '#00f2fe' : 'var(--text-muted)',
+                border: activeCategoryTab === 'DEPLOYMENT' ? '1px solid rgba(0,242,254,0.4)' : '1px solid transparent',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              🚀 Deployment Failures ({incidents.filter(i => i.category !== 'BUILD').length})
+            </button>
+            <button
+              id="tab-filter-build"
+              onClick={() => setActiveCategoryTab('BUILD')}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '8px',
+                background: activeCategoryTab === 'BUILD' ? 'rgba(168,85,247,0.25)' : 'transparent',
+                color: activeCategoryTab === 'BUILD' ? '#e9d5ff' : 'var(--text-muted)',
+                border: activeCategoryTab === 'BUILD' ? '1px solid rgba(168,85,247,0.5)' : '1px solid transparent',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              🛠️ CI/CD Build Failures ({incidents.filter(i => i.category === 'BUILD').length})
+            </button>
+          </div>
+        </div>
 
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
-                <th style={{ padding: '12px 16px' }}>Service</th>
+                <th style={{ padding: '12px 16px' }}>Service &amp; Category</th>
                 <th style={{ padding: '12px 16px' }}>Severity</th>
                 <th style={{ padding: '12px 16px' }}>AI Confidence</th>
                 <th style={{ padding: '12px 16px' }}>Root Cause</th>
@@ -642,14 +722,16 @@ jobs:
               </tr>
             </thead>
             <tbody>
-              {incidents.length === 0 && !loading && (
+              {incidents.filter((i) => activeCategoryTab === 'ALL' ? true : activeCategoryTab === 'BUILD' ? i.category === 'BUILD' : i.category !== 'BUILD').length === 0 && !loading && (
                 <tr>
                   <td colSpan={7} style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                    No incidents detected. Use simulation buttons above to test the pipeline.
+                    No {activeCategoryTab.toLowerCase()} incidents detected. Use simulation buttons or connect an external project.
                   </td>
                 </tr>
               )}
-              {incidents.map((inc) => (
+              {incidents
+                .filter((inc) => activeCategoryTab === 'ALL' ? true : activeCategoryTab === 'BUILD' ? inc.category === 'BUILD' : inc.category !== 'BUILD')
+                .map((inc) => (
                 <tr
                   key={inc.id}
                   style={{
@@ -662,7 +744,12 @@ jobs:
                 >
                   <td style={{ padding: '16px' }}>
                     <div style={{ fontWeight: 600 }}>{inc.serviceName}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{inc.environment}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{inc.environment}</span>
+                      <span style={{ fontSize: '0.68rem', padding: '2px 6px', borderRadius: '4px', background: inc.category === 'BUILD' ? 'rgba(168,85,247,0.2)' : 'rgba(0,242,254,0.1)', color: inc.category === 'BUILD' ? '#e9d5ff' : '#00f2fe', border: inc.category === 'BUILD' ? '1px solid rgba(168,85,247,0.4)' : '1px solid rgba(0,242,254,0.3)', fontWeight: 600 }}>
+                        {inc.category === 'BUILD' ? '🛠️ BUILD FAIL' : '🚀 DEPLOYMENT'}
+                      </span>
+                    </div>
                   </td>
                   <td style={{ padding: '16px' }}>
                     <span className={`badge badge-${inc.severity.toLowerCase()}`}>{inc.severity}</span>
@@ -721,6 +808,33 @@ jobs:
                           {resolvingId === inc.id ? 'Fixing...' : 'Mark Fixed'}
                         </button>
                       )}
+                      <button
+                        id={`soft-delete-${inc.id}-btn`}
+                        onClick={() => softDeleteIncident(inc.id)}
+                        disabled={deletingId === inc.id}
+                        title="Soft Delete Incident"
+                        style={{
+                          padding: '6px 10px',
+                          background: 'rgba(239, 68, 68, 0.12)',
+                          color: '#f87171',
+                          border: '1px solid rgba(239, 68, 68, 0.3)',
+                          borderRadius: '8px',
+                          cursor: deletingId === inc.id ? 'not-allowed' : 'pointer',
+                          fontSize: '0.78rem',
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        {deletingId === inc.id ? (
+                          <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
+                        ) : (
+                          <Trash2 size={12} />
+                        )}
+                        <span>Delete</span>
+                      </button>
                       <button
                         id={`view-incident-${inc.id}-btn`}
                         onClick={() => setSelectedIncident(inc)}
@@ -843,9 +957,37 @@ jobs:
                     <span>Incident marked as fixed{selectedIncident.resolvedAt ? ` · ${formatTime(selectedIncident.resolvedAt)}` : ''}</span>
                   </div>
                 )}
-                <button id="close-modal-btn" onClick={() => setSelectedIncident(null)} className="gradient-btn">
-                  Close Diagnostics
-                </button>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    id="modal-soft-delete-btn"
+                    onClick={() => softDeleteIncident(selectedIncident.id)}
+                    disabled={deletingId === selectedIncident.id}
+                    style={{
+                      padding: '10px 18px',
+                      background: 'rgba(239, 68, 68, 0.12)',
+                      color: '#f87171',
+                      border: '1px solid rgba(239, 68, 68, 0.35)',
+                      borderRadius: '10px',
+                      cursor: deletingId === selectedIncident.id ? 'not-allowed' : 'pointer',
+                      fontWeight: 600,
+                      fontSize: '0.85rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    {deletingId === selectedIncident.id ? (
+                      <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                    ) : (
+                      <Trash2 size={14} />
+                    )}
+                    <span>{deletingId === selectedIncident.id ? 'Deleting...' : 'Delete Incident'}</span>
+                  </button>
+                  <button id="close-modal-btn" onClick={() => setSelectedIncident(null)} className="gradient-btn">
+                    Close Diagnostics
+                  </button>
+                </div>
               </div>
             </div>
           </div>

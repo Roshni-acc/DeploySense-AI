@@ -69,14 +69,21 @@ model LogEntry {
   @@map("log_entries")
 }
 
+enum IncidentCategory {
+  DEPLOYMENT
+  BUILD
+}
+
 model Incident {
   id                 String           @id @default(uuid())
   deploymentId       String
   deployment         Deployment       @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
   serviceName        String
   environment        String           @default("production")
+  category           IncidentCategory @default(DEPLOYMENT)
   status             IncidentStatus   @default(OPEN)
   severity           IncidentSeverity @default(HIGH)
+  isDeleted          Boolean          @default(false)
   rootCause          String           @db.Text
   likelyCause        String           @db.Text
   aiConfidence       Float            @default(0.0)
