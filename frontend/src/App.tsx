@@ -43,7 +43,7 @@ export default function App() {
   const [testLogStatus, setTestLogStatus] = useState<string | null>(null);
   const [showSdkModal, setShowSdkModal] = useState(false);
 
-  const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
+  const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || 'https://deploysense-ai.onrender.com/api/v1';
 
   const fetchIncidents = async () => {
     setLoading(true);
@@ -71,7 +71,7 @@ export default function App() {
   useEffect(() => {
     fetchIncidents();
 
-    // 5-minute keep-alive heartbeat interval to prevent Render free server from sleeping
+    // 7-minute keep-alive heartbeat interval to prevent Render free server from sleeping
     const pingBackend = async () => {
       try {
         await fetch(`${API_BASE}/health`);
@@ -79,7 +79,7 @@ export default function App() {
         // Background keep-alive heartbeat
       }
     };
-    const keepAliveTimer = setInterval(pingBackend, 5 * 60 * 1000);
+    const keepAliveTimer = setInterval(pingBackend, 7 * 60 * 1000);
 
     return () => clearInterval(keepAliveTimer);
   }, []);
@@ -420,7 +420,7 @@ jobs:
         fetchIncidents();
       }
     } catch {
-      setTestLogStatus('❌ Network error. Ensure NestJS backend is running on http://localhost:3001.');
+      setTestLogStatus('❌ Network error. Ensure NestJS backend is running on https://deploysense-ai.onrender.com.');
     } finally {
       setSendingTestLog(false);
       setTimeout(() => setTestLogStatus(null), 5000);

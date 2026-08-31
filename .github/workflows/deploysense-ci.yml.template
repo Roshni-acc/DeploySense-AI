@@ -32,7 +32,7 @@ jobs:
         run: |
           echo "🔥 Entire Project Build Failed! Dispatching logs to DeploySense AI..."
           
-          curl -X POST "https://your-deploysense-backend.onrender.com/api/v1/logs/ingest" \
+          curl -X POST "https://deploysense-ai.onrender.com/api/v1/logs/ingest" \
             -H "Content-Type: application/json" \
             -d '{
               "serviceName": "${{ github.repository }}",

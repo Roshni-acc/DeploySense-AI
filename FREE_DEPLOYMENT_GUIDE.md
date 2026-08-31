@@ -63,18 +63,18 @@ This guide provides step-by-step instructions for deploying both the **DeploySen
 
 6. Click **Create Web Service**. Render will install dependencies, push Prisma migrations, compile NestJS, and start the app.
 7. Once deployed, note down your live Backend URL:
-   `https://deploysense-backend.onrender.com`
+   `https://deploysense-ai.onrender.com`
 
 ---
 
-## ⏰ Preventing Render Free-Tier Sleep (Automated 5-Min Heartbeat)
+## ⏰ Preventing Render Free-Tier Sleep (Automated 7-Min Heartbeat)
 
 Render's free-tier web services automatically sleep after 15 minutes of inactivity, causing 30-50 second cold start delays on new requests.
 
 **DeploySense includes a built-in Dual-Layer Keep-Alive Engine to prevent sleeping:**
-1. **Automated Backend Self-Ping (`KeepAliveService`)**: Every 5 minutes (`5 * 60 * 1000 ms`), the NestJS backend automatically pings `https://<service-name>.onrender.com/api/v1/health`. Render provides `RENDER_EXTERNAL_URL` automatically, keeping the instance 100% active 24/7 without external cron services.
-2. **Frontend Heartbeat**: The React frontend dashboard automatically sends a silent heartbeat to `/api/v1/health` every 5 minutes when open in the browser.
-3. **Dedicated Health Endpoint**: `GET /api/v1/health` returns server health status, uptime, and timestamps. You can also configure [UptimeRobot](https://uptimerobot.com) or [Cron-job.org](https://cron-job.org) to ping `https://<your-render-url>/api/v1/health` every 5 minutes for triple redundancy.
+1. **Automated Backend Self-Ping (`KeepAliveService`)**: Every 7 minutes (`7 * 60 * 1000 ms`), the NestJS backend automatically pings `https://deploysense-ai.onrender.com/api/v1/health`. Render provides `RENDER_EXTERNAL_URL` automatically, keeping the instance 100% active 24/7 without external cron services.
+2. **Frontend Heartbeat**: The React frontend dashboard automatically sends a silent heartbeat to `/api/v1/health` every 7 minutes when open in the browser.
+3. **Dedicated Health Endpoint**: `GET /api/v1/health` returns server health status, uptime, and timestamps. You can also configure [UptimeRobot](https://uptimerobot.com) or [Cron-job.org](https://cron-job.org) to ping `https://deploysense-ai.onrender.com/api/v1/health` every 7 minutes for triple redundancy.
 
 ---
 
@@ -90,7 +90,7 @@ Render's free-tier web services automatically sleep after 15 minutes of inactivi
 4. Expand **Environment Variables** and add:
    | Name | Value | Description |
    | :--- | :--- | :--- |
-   | `VITE_API_BASE_URL` | `https://deploysense-backend.onrender.com/api/v1` | Live Render backend endpoint |
+   | `VITE_API_BASE_URL` | `https://deploysense-ai.onrender.com/api/v1` | Live Render backend endpoint |
 
 5. Click **Deploy**.
 6. Vercel will build your static assets and publish your site to a free domain:
@@ -105,7 +105,7 @@ Render's free-tier web services automatically sleep after 15 minutes of inactivi
 2. Base directory: `frontend`
 3. Build command: `npm run build`
 4. Publish directory: `frontend/dist`
-5. Environment Variable: `VITE_API_BASE_URL` = `https://deploysense-backend.onrender.com/api/v1`
+5. Environment Variable: `VITE_API_BASE_URL` = `https://deploysense-ai.onrender.com/api/v1`
 6. Click **Deploy Site**.
 
 ---

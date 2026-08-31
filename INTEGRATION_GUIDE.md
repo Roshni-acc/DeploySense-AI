@@ -10,7 +10,7 @@
 DeploySense exposes a single HTTP endpoint:
 
 ```
-POST http://your-deploysense-host:3001/api/v1/logs/ingest
+POST https://deploysense-ai.onrender.com/api/v1/logs/ingest
 Content-Type: application/json
 ```
 
@@ -232,7 +232,7 @@ jobs:
           fi
 
           curl -s -X POST \
-            "${{ secrets.DEPLOYSENSE_URL }}/api/v1/logs/ingest" \
+            "https://deploysense-ai.onrender.com/api/v1/logs/ingest" \
             -H "Content-Type: application/json" \
             -d "{
               \"serviceName\": \"${{ github.event.repository.name }}\",
@@ -244,7 +244,7 @@ jobs:
             }"
 ```
 
-> **Setup:** Add `DEPLOYSENSE_URL=https://your-backend.onrender.com` and `ALERT_EMAIL=your-team@domain.com` as GitHub Actions secrets.
+> **Setup:** Add `DEPLOYSENSE_URL=https://deploysense-ai.onrender.com` and `ALERT_EMAIL=your-team@domain.com` as GitHub Actions secrets.
 
 ---
 
@@ -260,7 +260,7 @@ services:
   your-app:
     image: your-app:latest
     environment:
-      - DEPLOYSENSE_URL=http://deploysense:3001
+      - DEPLOYSENSE_URL=https://deploysense-ai.onrender.com
     depends_on:
       - deploysense
 
@@ -294,7 +294,7 @@ your-app-command 2>&1 | tee /tmp/app.log
 
 # If non-zero exit, report to DeploySense sidecar
 if [ $? -ne 0 ]; then
-  curl -s -X POST http://deploysense:3001/api/v1/logs/ingest \
+  curl -s -X POST https://deploysense-ai.onrender.com/api/v1/logs/ingest \
     -H "Content-Type: application/json" \
     -d "{\"serviceName\":\"$SERVICE_NAME\",\"environment\":\"$ENV\",\"logs\":\"$(cat /tmp/app.log | tail -100)\"}"
 fi
@@ -313,7 +313,7 @@ import java.util.Map;
 
 public class DeploySenseReporter {
     private static final String DEPLOYSENSE_URL = 
-        System.getenv().getOrDefault("DEPLOYSENSE_URL", "http://localhost:3001");
+        System.getenv().getOrDefault("DEPLOYSENSE_URL", "https://deploysense-ai.onrender.com");
     
     public static void report(String logs, String serviceName, String environment) {
         try {
@@ -349,7 +349,7 @@ Set these in your external project (`.env`, shell environment, or GitHub Reposit
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `DEPLOYSENSE_URL` | DeploySense backend URL | `https://your-backend.onrender.com` |
+| `DEPLOYSENSE_URL` | DeploySense backend URL | `https://deploysense-ai.onrender.com` |
 | `ALERT_EMAIL` | **Your team email address** (DeploySense sends AI diagnostic alerts directly here!) | `developer@your-company.com` |
 | `SERVICE_NAME` | Your service name (shows in dashboard) | `payment-service` |
 | `ENVIRONMENT` | Deployment environment | `production`, `staging` |
@@ -362,7 +362,7 @@ Set these in your external project (`.env`, shell environment, or GitHub Reposit
 Run this one-liner to confirm DeploySense is receiving your logs:
 
 ```bash
-curl -X POST http://localhost:3001/api/v1/logs/ingest \
+curl -X POST https://deploysense-ai.onrender.com/api/v1/logs/ingest \
   -H "Content-Type: application/json" \
   -d '{
     "serviceName": "test-service",
