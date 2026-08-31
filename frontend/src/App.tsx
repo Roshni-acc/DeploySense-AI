@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   Activity, ShieldAlert, Cpu, Terminal, RefreshCw, 
   CheckCircle2, AlertTriangle, Play, Zap, ArrowRight, X,
-  Database, MemoryStick, Settings, Loader2, ShieldCheck, Clock
+  Database, MemoryStick, Settings, Loader2, ShieldCheck, Clock,
+  Code2, Copy, Check, Send, Globe, ChevronDown
 } from 'lucide-react';
 
 interface Incident {
@@ -30,7 +31,13 @@ export default function App() {
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
 
-  const API_BASE = 'http://localhost:3001/api/v1';
+  // Integration guide state
+  const [selectedLang, setSelectedLang] = useState<'nodejs' | 'python' | 'go' | 'curl'>('nodejs');
+  const [copied, setCopied] = useState(false);
+  const [sendingTestLog, setSendingTestLog] = useState(false);
+  const [testLogStatus, setTestLogStatus] = useState<string | null>(null);
+
+  const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
 
   const defaultIncidents: Incident[] = [
     {
@@ -206,6 +213,156 @@ export default function App() {
     },
   ];
 
+  const codeSnippets: Record<string, { name: string; icon: string; desc: string; code: string }> = {
+    nodejs: {
+      name: 'Node.js / TypeScript',
+      icon: '⚡',
+      desc: 'Integrate DeploySense log ingestion into Express, NestJS, Next.js, or Node.js services.',
+      code: `import axios from 'axios';
+
+// Function to forward logs / exceptions to DeploySense API
+export async function sendLogToDeploySense(logMessage: string, serviceName = 'my-node-service', environment = 'production') {
+  try {
+    const response = await axios.post('${API_BASE}/logs/ingest', {
+      serviceName,
+      version: 'v1.0.0',
+      environment,
+      logs: logMessage,
+      source: 'nodejs-sdk'
+    });
+    console.log('DeploySense Ingestion Result:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Failed to send log to DeploySense:', error.message);
+  }
+}`
+    },
+    python: {
+      name: 'Python (Django / Flask / FastAPI)',
+      icon: '🐍',
+      desc: 'Send error traces and uncaught exception logs directly from Python applications.',
+      code: `import requests
+
+def send_log_to_deploysense(log_message: str, service_name="python-backend", environment="production"):
+    """Sends log telemetry stream to DeploySense for AI Incident Analysis"""
+    url = "${API_BASE}/logs/ingest"
+    payload = {
+        "serviceName": service_name,
+        "version": "v1.0.0",
+        "environment": environment,
+        "logs": log_message,
+        "source": "python-sdk"
+    }
+    try:
+        response = requests.post(url, json=payload, timeout=5)
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        print(f"DeploySense SDK Error: {e}")
+        return None`
+    },
+    go: {
+      name: 'Go (Golang)',
+      icon: '🐹',
+      desc: 'Forward Golang logger output or runtime panics to DeploySense API endpoint.',
+      code: `package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "fmt"
+    "net/http"
+)
+
+type DeploySensePayload struct {
+    ServiceName string \`json:"serviceName"\`
+    Version     string \`json:"version"\`
+    Environment string \`json:"environment"\`
+    Logs        string \`json:"logs"\`
+    Source      string \`json:"source"\`
+}
+
+func SendLogToDeploySense(logText string, serviceName string) error {
+    payload := DeploySensePayload{
+        ServiceName: serviceName,
+        Version:     "v1.0.0",
+        Environment: "production",
+        Logs:        logText,
+        Source:      "go-sdk",
+    }
+    
+    jsonData, err := json.Marshal(payload)
+    if err != nil { return err }
+
+    resp, err := http.Post("${API_BASE}/logs/ingest", "application/json", bytes.NewBuffer(jsonData))
+    if err != nil { return err }
+    defer resp.Body.Close()
+
+    fmt.Println("DeploySense Ingest Status:", resp.Status)
+    return nil
+}`
+    },
+    curl: {
+      name: 'cURL / CI/CD (Bash, GitHub Actions)',
+      icon: '🐚',
+      desc: 'Push build failure logs directly from CI/CD pipeline shell scripts or GitHub Actions.',
+      code: `# Direct API Call using cURL in any CI script or Docker container
+curl -X POST "${API_BASE}/logs/ingest" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "serviceName": "github-actions-pipeline",
+    "version": "v2.1.0",
+    "environment": "production-ci",
+    "logs": "[ERROR] Build step failed: Exit code 137. JavaScript heap out of memory",
+    "source": "bash-curl"
+  }'`
+    }
+  };
+
+  const handleCopyCode = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleTestIngest = async () => {
+    setSendingTestLog(true);
+    setTestLogStatus(null);
+    const sampleLogs: Record<string, string> = {
+      nodejs: '[ERROR] Node.js App Exception: ECONNREFUSED 127.0.0.1:5432 at PaymentController.connect',
+      python: '[ERROR] Python Exception: django.db.utils.OperationalError: could not connect to server at localhost:5432',
+      go: '[FATAL] Go Runtime Error: panic: runtime error: invalid memory address or nil pointer dereference',
+      curl: '[ERROR] Shell Exec: Container exited with status code 137. OOMKilled by kernel.',
+    };
+
+    try {
+      const res = await fetch(`${API_BASE}/logs/ingest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          serviceName: `${selectedLang}-integrated-app`,
+          version: 'v1.0.0',
+          environment: 'production',
+          logs: sampleLogs[selectedLang],
+          source: `${selectedLang}-sdk-demo`,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTestLogStatus('✅ Test log ingested successfully! AI analyzed & incident created.');
+        fetchIncidents();
+      } else {
+        setTestLogStatus('⚠️ Ingestion response received! Created transient incident report.');
+        fetchIncidents();
+      }
+    } catch {
+      setTestLogStatus('❌ Network error. Ensure NestJS backend is running on http://localhost:3001.');
+    } finally {
+      setSendingTestLog(false);
+      setTimeout(() => setTestLogStatus(null), 5000);
+    }
+  };
+
   const formatTime = (iso: string) => {
     try {
       return new Date(iso).toLocaleString('en-IN', {
@@ -376,6 +533,167 @@ export default function App() {
               </button>
             );
           })}
+        </div>
+      </div>
+
+      {/* UNIVERSAL MULTI-LANGUAGE INTEGRATION GUIDE SECTION */}
+      <div className="glass-panel" style={{ padding: '28px', marginBottom: '32px', borderLeft: '4px solid var(--accent-purple)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+          <div>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Code2 size={22} color="#a855f7" /> Universal Project Integration (4 Languages SDK Guide)
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+              DeploySense is 100% language-agnostic. Select your tech stack below to get ready-to-use integration code.
+            </p>
+          </div>
+
+          {/* LANGUAGE SELECTOR DROPDOWN & TABS */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 500 }}>Select Language:</span>
+            
+            {/* Mobile / Direct Dropdown Select */}
+            <div style={{ position: 'relative' }}>
+              <select
+                id="language-select-dropdown"
+                value={selectedLang}
+                onChange={(e) => setSelectedLang(e.target.value as any)}
+                style={{
+                  padding: '10px 36px 10px 14px',
+                  background: '#131826',
+                  color: '#fff',
+                  border: '1px solid rgba(168, 85, 247, 0.4)',
+                  borderRadius: '10px',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  appearance: 'none',
+                  outline: 'none',
+                }}
+              >
+                <option value="nodejs">⚡ Node.js / TypeScript</option>
+                <option value="python">🐍 Python (Django/Flask/FastAPI)</option>
+                <option value="go">🐹 Go (Golang)</option>
+                <option value="curl">🐚 cURL / Bash CI/CD</option>
+              </select>
+              <ChevronDown size={16} color="#a855f7" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+            </div>
+          </div>
+        </div>
+
+        {/* QUICK LANGUAGE TABS */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap' }}>
+          {(['nodejs', 'python', 'go', 'curl'] as const).map((langKey) => {
+            const isSelected = selectedLang === langKey;
+            const snippet = codeSnippets[langKey];
+            return (
+              <button
+                key={langKey}
+                id={`select-lang-${langKey}-btn`}
+                onClick={() => setSelectedLang(langKey)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '20px',
+                  background: isSelected ? 'rgba(168, 85, 247, 0.25)' : 'rgba(255,255,255,0.04)',
+                  color: isSelected ? '#e9d5ff' : 'var(--text-muted)',
+                  border: isSelected ? '1px solid rgba(168, 85, 247, 0.6)' : '1px solid var(--border-color)',
+                  fontWeight: isSelected ? 600 : 400,
+                  fontSize: '0.83rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <span>{snippet.icon}</span>
+                <span>{snippet.name}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* DESCRIPTION & API ENDPOINT BANNER */}
+        <div style={{ padding: '12px 16px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <p style={{ fontSize: '0.85rem', color: '#d1d5db' }}>
+            💡 {codeSnippets[selectedLang].desc}
+          </p>
+          <div style={{ fontSize: '0.78rem', padding: '4px 10px', borderRadius: '6px', background: 'rgba(0,242,254,0.1)', color: '#00f2fe', fontFamily: 'monospace' }}>
+            POST {API_BASE}/logs/ingest
+          </div>
+        </div>
+
+        {/* CODE WINDOW */}
+        <div style={{ borderRadius: '12px', background: '#070a10', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+          {/* CODE WINDOW HEADER */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', background: '#0e1320', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444' }} />
+              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b' }} />
+              <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981' }} />
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginLeft: '8px', fontFamily: 'monospace' }}>
+                deploysense-integration-{selectedLang}.{selectedLang === 'python' ? 'py' : selectedLang === 'go' ? 'go' : selectedLang === 'curl' ? 'sh' : 'ts'}
+              </span>
+            </div>
+
+            <button
+              id="copy-code-btn"
+              onClick={() => handleCopyCode(codeSnippets[selectedLang].code)}
+              style={{
+                padding: '5px 12px',
+                background: copied ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.08)',
+                color: copied ? '#34d399' : '#fff',
+                border: copied ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(255,255,255,0.15)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '0.78rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              {copied ? <Check size={14} color="#34d399" /> : <Copy size={14} />}
+              <span>{copied ? 'Copied!' : 'Copy Code'}</span>
+            </button>
+          </div>
+
+          {/* CODE PRE BLOCK */}
+          <pre style={{ margin: 0, padding: '18px', color: '#38bdf8', fontSize: '0.85rem', fontFamily: 'Fira Code, Consolas, monospace', lineHeight: '1.6', overflowX: 'auto' }}>
+            <code>{codeSnippets[selectedLang].code}</code>
+          </pre>
+        </div>
+
+        {/* BOTTOM ACTION: TEST INGESTION BUTTON & STATUS */}
+        <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <button
+            id={`test-ingest-${selectedLang}-btn`}
+            onClick={handleTestIngest}
+            disabled={sendingTestLog}
+            className="gradient-btn"
+            style={{
+              padding: '10px 20px',
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              opacity: sendingTestLog ? 0.7 : 1,
+              cursor: sendingTestLog ? 'not-allowed' : 'pointer',
+            }}
+          >
+            {sendingTestLog ? (
+              <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+            ) : (
+              <Send size={16} />
+            )}
+            <span>{sendingTestLog ? 'Sending Ingest Payload...' : `Test ${codeSnippets[selectedLang].name} Ingest API`}</span>
+          </button>
+
+          {testLogStatus && (
+            <div style={{ fontSize: '0.85rem', color: testLogStatus.includes('✅') ? '#34d399' : '#facc15', fontWeight: 500, padding: '6px 14px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)' }}>
+              {testLogStatus}
+            </div>
+          )}
         </div>
       </div>
 

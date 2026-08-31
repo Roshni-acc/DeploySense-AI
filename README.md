@@ -52,12 +52,19 @@ Unlike traditional CI/CD pipelines that simply fail and output raw, unparsed ter
 
 ## 🔥 Key Features
 
+- **🌐 Universal Multi-Language SDK & Guide**: Language-agnostic log ingestion endpoint (`POST /api/v1/logs/ingest`) with interactive UI code samples for **Node.js/TypeScript**, **Python**, **Go (Golang)**, and **cURL/Bash CI/CD**.
 - **⚡ Automated Log Ingestion**: Ingests deployment logs from GitHub Actions, webhooks, or custom container monitors.
 - **🤖 AI-Powered Root Cause Analysis**: Leverages Google Gemini AI to analyze raw stack traces, connection errors, and missing environment flags.
 - **🎯 Actionable Remediation**: Generates human-readable cause summaries, severity rankings (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), and exact fix commands.
 - **🚨 Multi-Channel Alerting**: Dispatches real-time incident summaries to Slack webhooks, email endpoints, and custom webhooks.
-- **📊 Real-time Incident Dashboard**: Modern React UI to monitor deployments, explore incident diagnostics, and trigger test pipeline failures.
-- **⚡ Asynchronous Queue Processing**: BullMQ + Redis handles log ingestion jobs asynchronously without blocking HTTP requests.
+- **📊 Real-time Incident Dashboard**: Modern React UI to monitor deployments, explore incident diagnostics, trigger test failures, and test language SDKs.
+
+---
+
+## 📚 Detailed Documentation Guides
+
+- 📘 **[Full Codebase & Feature Guide (PROJECT_FEATURES_AND_CODE.md)](file:///c:/Users/Roshni%20Singh/DeploySense/DeploySense-AI/PROJECT_FEATURES_AND_CODE.md)**: Exhaustive line-by-line breakdown of every NestJS backend service, Prisma data model, React UI component, and Gemini AI diagnostic flow.
+- 🚀 **[Free Platform Deployment Guide (FREE_DEPLOYMENT_GUIDE.md)](file:///c:/Users/Roshni%20Singh/DeploySense/DeploySense-AI/FREE_DEPLOYMENT_GUIDE.md)**: Complete step-by-step instructions for deploying both Frontend and Backend on **100% Free Cloud Hosting** (Render, Vercel, Neon.tech).
 
 ---
 
