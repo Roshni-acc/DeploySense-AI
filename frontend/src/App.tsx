@@ -104,6 +104,18 @@ export default function App() {
 
   useEffect(() => {
     fetchIncidents();
+
+    // 5-minute keep-alive heartbeat interval to prevent Render free server from sleeping
+    const pingBackend = async () => {
+      try {
+        await fetch(`${API_BASE}/health`);
+      } catch {
+        // Background keep-alive heartbeat
+      }
+    };
+    const keepAliveTimer = setInterval(pingBackend, 5 * 60 * 1000);
+
+    return () => clearInterval(keepAliveTimer);
   }, []);
 
   const markAsFixed = async (incidentId: string) => {
