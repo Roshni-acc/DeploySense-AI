@@ -189,56 +189,86 @@ export default function App() {
 
   const codeSnippets: Record<string, { name: string; icon: string; desc: string; code: string }> = {
     nodejs: {
-      name: 'Node.js / TypeScript',
+      name: 'Node.js / TypeScript (Global Error Listener)',
       icon: '⚡',
-      desc: 'Integrate DeploySense log ingestion into Express, NestJS, Next.js, or Node.js services.',
+      desc: 'Paste at project entry (index.ts / server.js / main.ts). Automatically captures ALL uncaught exceptions and unhandled promise rejections across your ENTIRE Node project!',
       code: `import axios from 'axios';
 
-// Function to forward logs / exceptions to DeploySense API
-export async function sendLogToDeploySense(logMessage: string, serviceName = 'my-node-service', environment = 'production') {
-  try {
-    const response = await axios.post('${API_BASE}/logs/ingest', {
-      serviceName,
-      version: 'v1.0.0',
-      environment,
-      logs: logMessage,
-      source: 'nodejs-sdk'
-    });
-    console.log('DeploySense Ingestion Result:', response.data);
-    return response.data;
-  } catch (error: any) {
-    console.error('Failed to send log to DeploySense:', error.message);
-  }
+// 🚀 GLOBAL PROJECT-WIDE ERROR LISTENER (Place in index.ts / server.js / main.ts)
+// Catches ANY uncaught exception or unhandled promise rejection in your ENTIRE Node.js project!
+export function initDeploySenseGlobalLogger(serviceName = 'my-node-app', environment = 'production') {
+  const API_URL = '${API_BASE}/logs/ingest';
+
+  const sendLog = async (errorLog: string) => {
+    try {
+      await axios.post(API_URL, {
+        serviceName,
+        version: 'v1.0.0',
+        environment,
+        logs: errorLog,
+        source: 'global-uncaught-handler'
+      });
+    } catch (e: any) {
+      console.error('DeploySense Ingest Error:', e.message);
+    }
+  };
+
+  // 1. Catch all uncaught synchronous exceptions across the ENTIRE project
+  process.on('uncaughtException', (error) => {
+    console.error('🔥 Global Uncaught Exception Detected:', error);
+    sendLog(\`[GLOBAL UNCAUGHT EXCEPTION]\\n\${error.stack || error.message}\`);
+  });
+
+  // 2. Catch all unhandled async promise rejections across the ENTIRE project
+  process.on('unhandledRejection', (reason: any) => {
+    console.error('🔥 Global Unhandled Rejection Detected:', reason);
+    sendLog(\`[GLOBAL UNHANDLED REJECTION]\\n\${reason?.stack || reason}\`);
+  });
+
+  console.log('🚀 DeploySense Global Project-Wide Error Monitor Active.');
 }`
     },
     python: {
-      name: 'Python (Django / Flask / FastAPI)',
+      name: 'Python (Global sys.excepthook Handler)',
       icon: '🐍',
-      desc: 'Send error traces and uncaught exception logs directly from Python applications.',
-      code: `import requests
+      desc: 'Paste at top of main.py / app.py / settings.py. Automatically intercepts EVERY uncaught exception across your ENTIRE Python project codebase!',
+      code: `import sys
+import traceback
+import requests
 
-def send_log_to_deploysense(log_message: str, service_name="python-backend", environment="production"):
-    """Sends log telemetry stream to DeploySense for AI Incident Analysis"""
+def init_deploysense_global_logger(service_name="my-python-project", environment="production"):
+    """🚀 Global Project-Wide Exception Handler (Place at top of main.py / app.py)
+    Automatically catches EVERY uncaught crash & exception across your ENTIRE Python project!"""
     url = "${API_BASE}/logs/ingest"
-    payload = {
-        "serviceName": service_name,
-        "version": "v1.0.0",
-        "environment": environment,
-        "logs": log_message,
-        "source": "python-sdk"
-    }
-    try:
-        response = requests.post(url, json=payload, timeout=5)
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        print(f"DeploySense SDK Error: {e}")
-        return None`
+
+    def handle_global_exception(exc_type, exc_value, exc_traceback):
+        if issubclass(exc_type, KeyboardInterrupt):
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+            return
+
+        error_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+        print("🔥 [DeploySense] Global Project Error Intercepted:\\n", error_msg)
+
+        payload = {
+            "serviceName": service_name,
+            "version": "v1.0.0",
+            "environment": environment,
+            "logs": f"[GLOBAL PYTHON EXCEPTION]\\n{error_msg}",
+            "source": "sys.excepthook"
+        }
+        try:
+            requests.post(url, json=payload, timeout=5)
+        except Exception as e:
+            print(f"DeploySense Ingest Error: {e}")
+
+    # Set as global exception handler for the ENTIRE application
+    sys.excepthook = handle_global_exception
+    print("🚀 DeploySense Global Python Error Monitor Initialized.")`
     },
     go: {
-      name: 'Go (Golang)',
+      name: 'Go (Global Panic Recovery Middleware)',
       icon: '🐹',
-      desc: 'Forward Golang logger output or runtime panics to DeploySense API endpoint.',
+      desc: 'Attach to HTTP server or main function. Intercepts all panics, runtime crashes, and stack traces across your ENTIRE Go application!',
       code: `package main
 
 import (
@@ -246,50 +276,56 @@ import (
     "encoding/json"
     "fmt"
     "net/http"
+    "runtime/debug"
 )
 
-type DeploySensePayload struct {
-    ServiceName string \`json:"serviceName"\`
-    Version     string \`json:"version"\`
-    Environment string \`json:"environment"\`
-    Logs        string \`json:"logs"\`
-    Source      string \`json:"source"\`
+// 🚀 Global Panic Recovery Middleware for your ENTIRE Go Web Application
+func DeploySenseGlobalRecoveryMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        defer func() {
+            if err := recover(); err != nil {
+                stackTrace := string(debug.Stack())
+                errorMsg := fmt.Sprintf("[GLOBAL GO PANIC]\\nPanic: %v\\nStack Trace:\\n%s", err, stackTrace)
+                
+                // Send log asynchronously to DeploySense
+                go sendLogToDeploySense(errorMsg, "golang-project")
+                
+                http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+            }
+        }()
+        next.ServeHTTP(w, r)
+    })
 }
 
-func SendLogToDeploySense(logText string, serviceName string) error {
-    payload := DeploySensePayload{
-        ServiceName: serviceName,
-        Version:     "v1.0.0",
-        Environment: "production",
-        Logs:        logText,
-        Source:      "go-sdk",
+func sendLogToDeploySense(logText string, serviceName string) {
+    payload := map[string]string{
+        "serviceName": serviceName,
+        "version":     "v1.0.0",
+        "environment": "production",
+        "logs":        logText,
+        "source":      "global-go-middleware",
     }
-    
-    jsonData, err := json.Marshal(payload)
-    if err != nil { return err }
-
-    resp, err := http.Post("${API_BASE}/logs/ingest", "application/json", bytes.NewBuffer(jsonData))
-    if err != nil { return err }
-    defer resp.Body.Close()
-
-    fmt.Println("DeploySense Ingest Status:", resp.Status)
-    return nil
+    jsonData, _ := json.Marshal(payload)
+    http.Post("${API_BASE}/logs/ingest", "application/json", bytes.NewBuffer(jsonData))
 }`
     },
     curl: {
-      name: 'cURL / CI/CD (Bash, GitHub Actions)',
+      name: 'cURL / CI/CD (Entire Project Build & Test Logs)',
       icon: '🐚',
-      desc: 'Push build failure logs directly from CI/CD pipeline shell scripts or GitHub Actions.',
-      code: `# Direct API Call using cURL in any CI script or Docker container
-curl -X POST "${API_BASE}/logs/ingest" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "serviceName": "github-actions-pipeline",
-    "version": "v2.1.0",
-    "environment": "production-ci",
-    "logs": "[ERROR] Build step failed: Exit code 137. JavaScript heap out of memory",
-    "source": "bash-curl"
-  }'`
+      desc: 'Add to GitHub Actions or CI pipeline script. Automatically captures all build, test, and container failure logs for your ENTIRE project repository!',
+      code: `# 🚀 Capture full build & test output logs for your ENTIRE project in GitHub Actions / Shell script
+npm test 2>&1 | tee project_build.log || {
+  echo "🔥 Project Build Failed! Sending full logs to DeploySense..."
+  curl -X POST "${API_BASE}/logs/ingest" \\
+    -H "Content-Type: application/json" \\
+    -d "{
+      \\"serviceName\\": \\"entire-project-ci-pipeline\\",
+      \\"version\\": \\"v1.0.0\\",
+      \\"environment\\": \\"ci-github-actions\\",
+      \\"logs\\": \\"\$(cat project_build.log | tr '\\n' ' ' | sed 's/\"/\\\\\"/g')\\",
+      \\"source\\": \\"ci-global-runner\\"
+    }"
+}`
     }
   };
 
