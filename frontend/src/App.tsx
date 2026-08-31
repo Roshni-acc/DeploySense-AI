@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Activity, ShieldAlert, Cpu, Terminal, RefreshCw, 
+import {
+  Activity, ShieldAlert, Cpu, Terminal, RefreshCw,
   CheckCircle2, AlertTriangle, Play, Zap, ArrowRight, X,
   Database, MemoryStick, Settings, Loader2, ShieldCheck, Clock,
-  Code2, Copy, Check, Send, Globe, ChevronDown, Trash2, Filter, Layers
+  Code2, Copy, Check, Send, Globe, ChevronDown, Trash2, Filter, Layers, Mail
 } from 'lucide-react';
 
 interface Incident {
@@ -228,6 +228,7 @@ export function initDeploySenseGlobalLogger(serviceName = 'my-node-app', environ
         serviceName,
         version: 'v1.0.0',
         environment,
+        recipientEmail: process.env.ALERT_EMAIL, // 📧 Route alerts directly to your email
         logs: errorLog,
         source: 'global-uncaught-handler'
       });
@@ -257,6 +258,7 @@ export function initDeploySenseGlobalLogger(serviceName = 'my-node-app', environ
       desc: 'Paste at top of main.py / app.py / settings.py. Automatically intercepts EVERY uncaught exception across your ENTIRE Python project codebase!',
       code: `import sys
 import traceback
+import os
 import requests
 
 def init_deploysense_global_logger(service_name="my-python-project", environment="production"):
@@ -270,13 +272,14 @@ def init_deploysense_global_logger(service_name="my-python-project", environment
             return
 
         error_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-        print("🔥 [DeploySense] Global Project Error Intercepted:\\n", error_msg)
+        print("🔥 [DeploySense] Global Project Error Intercepted:\n", error_msg)
 
         payload = {
             "serviceName": service_name,
             "version": "v1.0.0",
             "environment": environment,
-            "logs": f"[GLOBAL PYTHON EXCEPTION]\\n{error_msg}",
+            "recipientEmail": os.getenv("ALERT_EMAIL", ""), # 📧 Optional: Loads ALERT_EMAIL from app env (defaults to backend ALERT_EMAIL_TO if empty)
+            "logs": f"[GLOBAL PYTHON EXCEPTION]\n{error_msg}",
             "source": "sys.excepthook"
         }
         try:
@@ -299,6 +302,7 @@ import (
     "encoding/json"
     "fmt"
     "net/http"
+    "os"
     "runtime/debug"
 )
 
@@ -308,7 +312,7 @@ func DeploySenseGlobalRecoveryMiddleware(next http.Handler) http.Handler {
         defer func() {
             if err := recover(); err != nil {
                 stackTrace := string(debug.Stack())
-                errorMsg := fmt.Sprintf("[GLOBAL GO PANIC]\\nPanic: %v\\nStack Trace:\\n%s", err, stackTrace)
+                errorMsg := fmt.Sprintf("[GLOBAL GO PANIC]\nPanic: %v\nStack Trace:\n%s", err, stackTrace)
                 
                 // Send log asynchronously to DeploySense
                 go sendLogToDeploySense(errorMsg, "golang-project")
@@ -322,11 +326,12 @@ func DeploySenseGlobalRecoveryMiddleware(next http.Handler) http.Handler {
 
 func sendLogToDeploySense(logText string, serviceName string) {
     payload := map[string]string{
-        "serviceName": serviceName,
-        "version":     "v1.0.0",
-        "environment": "production",
-        "logs":        logText,
-        "source":      "global-go-middleware",
+        "serviceName":    serviceName,
+        "version":        "v1.0.0",
+        "environment":    "production",
+        "recipientEmail": os.Getenv("ALERT_EMAIL"), // 📧 Optional: Loads ALERT_EMAIL from app env (defaults to backend ALERT_EMAIL_TO if empty)
+        "logs":           logText,
+        "source":         "global-go-middleware",
     }
     jsonData, _ := json.Marshal(payload)
     http.Post("${API_BASE}/logs/ingest", "application/json", bytes.NewBuffer(jsonData))
@@ -370,7 +375,7 @@ jobs:
               "serviceName": "\${{ github.repository }}",
               "version": "\${{ github.sha }}",
               "environment": "github-actions-ci",
-              "recipientEmail": "dev-team@yourdomain.com",
+              "recipientEmail": "\${{ secrets.ALERT_EMAIL }}",
               "logs": "[ERROR] Entire project CI pipeline failed on branch \${{ github.ref_name }} for commit \${{ github.sha }}. Automatic AI root-cause analysis triggered.",
               "source": "github-actions-workflow"
             }'`
@@ -401,6 +406,7 @@ jobs:
           serviceName: `${selectedLang}-integrated-app`,
           version: 'v1.0.0',
           environment: 'production',
+          recipientEmail: 'dev-team@yourdomain.com',
           logs: sampleLogs[selectedLang],
           source: `${selectedLang}-sdk-demo`,
         }),
@@ -733,121 +739,121 @@ jobs:
               {incidents
                 .filter((inc) => activeCategoryTab === 'ALL' ? true : activeCategoryTab === 'BUILD' ? inc.category === 'BUILD' : inc.category !== 'BUILD')
                 .map((inc) => (
-                <tr
-                  key={inc.id}
-                  style={{
-                    borderBottom: '1px solid var(--border-color)',
-                    transition: 'background 0.15s',
-                    opacity: isFixed(inc) ? 0.7 : 1,
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <td style={{ padding: '16px' }}>
-                    <div style={{ fontWeight: 600 }}>{inc.serviceName}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{inc.environment}</span>
-                      <span style={{ fontSize: '0.68rem', padding: '2px 6px', borderRadius: '4px', background: inc.category === 'BUILD' ? 'rgba(168,85,247,0.2)' : 'rgba(0,242,254,0.1)', color: inc.category === 'BUILD' ? '#e9d5ff' : '#00f2fe', border: inc.category === 'BUILD' ? '1px solid rgba(168,85,247,0.4)' : '1px solid rgba(0,242,254,0.3)', fontWeight: 600 }}>
-                        {inc.category === 'BUILD' ? '🛠️ BUILD FAIL' : '🚀 DEPLOYMENT'}
+                  <tr
+                    key={inc.id}
+                    style={{
+                      borderBottom: '1px solid var(--border-color)',
+                      transition: 'background 0.15s',
+                      opacity: isFixed(inc) ? 0.7 : 1,
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    <td style={{ padding: '16px' }}>
+                      <div style={{ fontWeight: 600 }}>{inc.serviceName}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{inc.environment}</span>
+                        <span style={{ fontSize: '0.68rem', padding: '2px 6px', borderRadius: '4px', background: inc.category === 'BUILD' ? 'rgba(168,85,247,0.2)' : 'rgba(0,242,254,0.1)', color: inc.category === 'BUILD' ? '#e9d5ff' : '#00f2fe', border: inc.category === 'BUILD' ? '1px solid rgba(168,85,247,0.4)' : '1px solid rgba(0,242,254,0.3)', fontWeight: 600 }}>
+                          {inc.category === 'BUILD' ? '🛠️ BUILD FAIL' : '🚀 DEPLOYMENT'}
+                        </span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '16px' }}>
+                      <span className={`badge badge-${inc.severity.toLowerCase()}`}>{inc.severity}</span>
+                    </td>
+                    <td style={{ padding: '16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: '48px', height: '4px', borderRadius: '4px', background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                          <div style={{ width: `${inc.aiConfidence}%`, height: '100%', background: inc.aiConfidence >= 90 ? '#10b981' : '#facc15', borderRadius: '4px' }} />
+                        </div>
+                        <span style={{ fontWeight: 600, color: '#00f2fe', fontSize: '0.85rem' }}>{inc.aiConfidence}%</span>
+                      </div>
+                    </td>
+                    <td style={{ padding: '16px', maxWidth: '280px' }}>
+                      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inc.rootCause}</div>
+                      {inc.resolvedAt && (
+                        <div style={{ fontSize: '0.72rem', color: '#34d399', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Clock size={11} /> Fixed: {formatTime(inc.resolvedAt)}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: '16px' }}>
+                      <span className={`badge ${isFixed(inc) ? 'badge-success' : 'badge-high'}`}>
+                        {isFixed(inc) ? '✓ FIXED' : inc.status}
                       </span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '16px' }}>
-                    <span className={`badge badge-${inc.severity.toLowerCase()}`}>{inc.severity}</span>
-                  </td>
-                  <td style={{ padding: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{ width: '48px', height: '4px', borderRadius: '4px', background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-                        <div style={{ width: `${inc.aiConfidence}%`, height: '100%', background: inc.aiConfidence >= 90 ? '#10b981' : '#facc15', borderRadius: '4px' }} />
-                      </div>
-                      <span style={{ fontWeight: 600, color: '#00f2fe', fontSize: '0.85rem' }}>{inc.aiConfidence}%</span>
-                    </div>
-                  </td>
-                  <td style={{ padding: '16px', maxWidth: '280px' }}>
-                    <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inc.rootCause}</div>
-                    {inc.resolvedAt && (
-                      <div style={{ fontSize: '0.72rem', color: '#34d399', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Clock size={11} /> Fixed: {formatTime(inc.resolvedAt)}
-                      </div>
-                    )}
-                  </td>
-                  <td style={{ padding: '16px' }}>
-                    <span className={`badge ${isFixed(inc) ? 'badge-success' : 'badge-high'}`}>
-                      {isFixed(inc) ? '✓ FIXED' : inc.status}
-                    </span>
-                  </td>
-                  <td style={{ padding: '16px', fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                    {formatTime(inc.createdAt)}
-                  </td>
-                  <td style={{ padding: '16px', textAlign: 'right' }}>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-                      {!isFixed(inc) && (
+                    </td>
+                    <td style={{ padding: '16px', fontSize: '0.78rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                      {formatTime(inc.createdAt)}
+                    </td>
+                    <td style={{ padding: '16px', textAlign: 'right' }}>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                        {!isFixed(inc) && (
+                          <button
+                            id={`mark-fixed-${inc.id}-btn`}
+                            onClick={() => markAsFixed(inc.id)}
+                            disabled={resolvingId === inc.id}
+                            style={{
+                              padding: '6px 12px',
+                              background: 'rgba(16, 185, 129, 0.15)',
+                              color: '#34d399',
+                              border: '1px solid rgba(16, 185, 129, 0.4)',
+                              borderRadius: '8px',
+                              cursor: resolvingId === inc.id ? 'not-allowed' : 'pointer',
+                              fontSize: '0.78rem',
+                              fontWeight: 600,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '5px',
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            {resolvingId === inc.id ? (
+                              <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
+                            ) : (
+                              <ShieldCheck size={12} />
+                            )}
+                            {resolvingId === inc.id ? 'Fixing...' : 'Mark Fixed'}
+                          </button>
+                        )}
                         <button
-                          id={`mark-fixed-${inc.id}-btn`}
-                          onClick={() => markAsFixed(inc.id)}
-                          disabled={resolvingId === inc.id}
+                          id={`soft-delete-${inc.id}-btn`}
+                          onClick={() => softDeleteIncident(inc.id)}
+                          disabled={deletingId === inc.id}
+                          title="Soft Delete Incident"
                           style={{
-                            padding: '6px 12px',
-                            background: 'rgba(16, 185, 129, 0.15)',
-                            color: '#34d399',
-                            border: '1px solid rgba(16, 185, 129, 0.4)',
+                            padding: '6px 10px',
+                            background: 'rgba(239, 68, 68, 0.12)',
+                            color: '#f87171',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
                             borderRadius: '8px',
-                            cursor: resolvingId === inc.id ? 'not-allowed' : 'pointer',
+                            cursor: deletingId === inc.id ? 'not-allowed' : 'pointer',
                             fontSize: '0.78rem',
                             fontWeight: 600,
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '5px',
+                            gap: '4px',
                             transition: 'all 0.2s ease',
                           }}
                         >
-                          {resolvingId === inc.id ? (
+                          {deletingId === inc.id ? (
                             <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
                           ) : (
-                            <ShieldCheck size={12} />
+                            <Trash2 size={12} />
                           )}
-                          {resolvingId === inc.id ? 'Fixing...' : 'Mark Fixed'}
+                          <span>Delete</span>
                         </button>
-                      )}
-                      <button
-                        id={`soft-delete-${inc.id}-btn`}
-                        onClick={() => softDeleteIncident(inc.id)}
-                        disabled={deletingId === inc.id}
-                        title="Soft Delete Incident"
-                        style={{
-                          padding: '6px 10px',
-                          background: 'rgba(239, 68, 68, 0.12)',
-                          color: '#f87171',
-                          border: '1px solid rgba(239, 68, 68, 0.3)',
-                          borderRadius: '8px',
-                          cursor: deletingId === inc.id ? 'not-allowed' : 'pointer',
-                          fontSize: '0.78rem',
-                          fontWeight: 600,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          transition: 'all 0.2s ease',
-                        }}
-                      >
-                        {deletingId === inc.id ? (
-                          <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />
-                        ) : (
-                          <Trash2 size={12} />
-                        )}
-                        <span>Delete</span>
-                      </button>
-                      <button
-                        id={`view-incident-${inc.id}-btn`}
-                        onClick={() => setSelectedIncident(inc)}
-                        className="gradient-btn"
-                        style={{ fontSize: '0.78rem', padding: '6px 12px' }}
-                      >
-                        AI Diagnostics <ArrowRight size={13} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        <button
+                          id={`view-incident-${inc.id}-btn`}
+                          onClick={() => setSelectedIncident(inc)}
+                          className="gradient-btn"
+                          style={{ fontSize: '0.78rem', padding: '6px 12px' }}
+                        >
+                          AI Diagnostics <ArrowRight size={13} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -1075,12 +1081,20 @@ jobs:
             </div>
 
             {/* DESCRIPTION & API BANNER */}
-            <div style={{ padding: '12px 16px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)', marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-              <p style={{ fontSize: '0.85rem', color: '#d1d5db' }}>
+            <div style={{ padding: '12px 16px', borderRadius: '10px', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <p style={{ fontSize: '0.85rem', color: '#d1d5db', margin: 0 }}>
                 💡 {codeSnippets[selectedLang].desc}
               </p>
               <div style={{ fontSize: '0.78rem', padding: '4px 10px', borderRadius: '6px', background: 'rgba(0,242,254,0.1)', color: '#00f2fe', fontFamily: 'monospace' }}>
                 POST {API_BASE}/logs/ingest
+              </div>
+            </div>
+
+            {/* EMAIL RECIPIENT REMINDER BANNER */}
+            <div style={{ padding: '10px 14px', borderRadius: '10px', background: 'rgba(168, 85, 247, 0.12)', border: '1px solid rgba(168, 85, 247, 0.35)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Mail size={18} color="#e9d5ff" style={{ flexShrink: 0 }} />
+              <div style={{ fontSize: '0.82rem', color: '#e9d5ff' }}>
+                <strong>✉️ Custom Recipient Email Setup:</strong> Set <code style={{ background: 'rgba(0,0,0,0.4)', padding: '2px 6px', borderRadius: '4px', color: '#38bdf8' }}>ALERT_EMAIL</code> in your project's <code style={{ background: 'rgba(0,0,0,0.4)', padding: '2px 6px', borderRadius: '4px', color: '#38bdf8' }}>.env</code> file or GitHub Action Secrets to receive AI diagnostic reports directly in your team's inbox!
               </div>
             </div>
 

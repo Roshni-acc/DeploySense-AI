@@ -47,6 +47,8 @@ DeploySense classifies incidents into two distinct tabs:
 
 ## Method 1: Node.js (Native HTTP)
 
+> 💡 **Recipient Email Setup**: Set `process.env.ALERT_EMAIL` in your project's `.env` or pass `recipientEmail` in `options`. The alert will be sent directly to that inbox!
+
 ```javascript
 // deploysense-reporter.js
 const http = require('http');
@@ -57,6 +59,8 @@ function reportToDeploySense(logs, options = {}) {
     environment: options.environment || process.env.NODE_ENV || 'production',
     version: options.version || process.env.npm_package_version || '1.0.0',
     source: 'node-app',
+    // ✉️ Custom recipient email (reads process.env.ALERT_EMAIL from your app's .env)
+    recipientEmail: options.recipientEmail || process.env.ALERT_EMAIL || 'dev-team@yourdomain.com',
     logs,
   });
 
@@ -89,7 +93,10 @@ const { reportToDeploySense } = require('./deploysense-reporter');
 
 // In your catch blocks or process error handlers:
 process.on('uncaughtException', (err) => {
-  reportToDeploySense(`FATAL: ${err.stack}`, { serviceName: 'my-node-app' });
+  reportToDeploySense(`FATAL: ${err.stack}`, { 
+    serviceName: 'my-node-app',
+    recipientEmail: process.env.ALERT_EMAIL // 📧 Route alert to your email!
+  });
 });
 ```
 
@@ -97,18 +104,22 @@ process.on('uncaughtException', (err) => {
 
 ## Method 2: Python
 
+> 💡 **Recipient Email Setup**: Set `ALERT_EMAIL` in your Python project environment variables or `.env` file.
+
 ```python
 # deploysense_reporter.py
 import urllib.request
 import json
 import os
 
-def report_to_deploysense(logs: str, service_name: str = None, environment: str = None, version: str = None, host: str = "localhost", port: int = 3001):
+def report_to_deploysense(logs: str, service_name: str = None, environment: str = None, version: str = None, recipient_email: str = None, host: str = "localhost", port: int = 3001):
     payload = json.dumps({
         "serviceName": service_name or os.getenv("SERVICE_NAME", "python-app"),
         "environment": environment or os.getenv("ENVIRONMENT", "production"),
         "version": version or os.getenv("APP_VERSION", "1.0.0"),
         "source": "python-app",
+        # ✉️ Custom recipient email (reads ALERT_EMAIL from your environment)
+        "recipientEmail": recipient_email or os.getenv("ALERT_EMAIL", "dev-team@yourdomain.com"),
         "logs": logs
     }).encode("utf-8")
 
@@ -138,7 +149,8 @@ except Exception as e:
     report_to_deploysense(
         logs=f"ERROR: {str(e)}\n{traceback.format_exc()}",
         service_name="my-python-service",
-        environment="production"
+        environment="production",
+        recipient_email=os.getenv("ALERT_EMAIL") # 📧 Route alert to your email!
     )
     raise
 ```
@@ -156,6 +168,7 @@ DEPLOYSENSE_PORT="${DEPLOYSENSE_PORT:-3001}"
 SERVICE_NAME="${SERVICE_NAME:-my-service}"
 ENVIRONMENT="${ENVIRONMENT:-production}"
 VERSION="${VERSION:-1.0.0}"
+RECIPIENT_EMAIL="${RECIPIENT_EMAIL:-$ALERT_EMAIL}" # 📧 Reads $ALERT_EMAIL from your shell env
 
 report_to_deploysense() {
   local logs="$1"
@@ -167,6 +180,7 @@ report_to_deploysense() {
       \"environment\": \"$ENVIRONMENT\",
       \"version\": \"$VERSION\",
       \"source\": \"bash-script\",
+      \"recipientEmail\": \"${RECIPIENT_EMAIL:-dev-team@yourdomain.com}\",
       \"logs\": $(echo "$logs" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')
     }" || echo "[DeploySense] Reporting failed"
 }
@@ -184,7 +198,7 @@ fi
 
 ## Method 4: GitHub Actions CI/CD
 
-Add this step to any `.github/workflows/*.yml` file to automatically report deployment failures:
+> 💡 **Recipient Email Setup**: Add `ALERT_EMAIL` as a GitHub Actions Secret in your project repository (**Settings ➔ Secrets & Variables ➔ Actions**).
 
 ```yaml
 # .github/workflows/deploy.yml
@@ -225,11 +239,12 @@ jobs:
               \"environment\": \"production\",
               \"version\": \"${{ github.sha }}\",
               \"source\": \"github-actions\",
+              \"recipientEmail\": \"${{ secrets.ALERT_EMAIL }}\",
               \"logs\": \"$LOGS\"
             }"
 ```
 
-> **Setup:** Add `DEPLOYSENSE_URL=http://your-server:3001` as a GitHub Actions secret.
+> **Setup:** Add `DEPLOYSENSE_URL=https://your-backend.onrender.com` and `ALERT_EMAIL=your-team@domain.com` as GitHub Actions secrets.
 
 ---
 
@@ -307,6 +322,7 @@ public class DeploySenseReporter {
                 "environment", environment,
                 "version", "1.0.0",
                 "source", "spring-boot",
+                "recipientEmail", System.getenv().getOrDefault("ALERT_EMAIL", "dev-team@yourdomain.com"),
                 "logs", logs
             ));
             
@@ -329,11 +345,12 @@ public class DeploySenseReporter {
 
 ## 📦 Environment Variables for Integration
 
-Set these in your external project:
+Set these in your external project (`.env`, shell environment, or GitHub Repository Secrets):
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `DEPLOYSENSE_URL` | DeploySense backend URL | `http://localhost:3001` |
+| `DEPLOYSENSE_URL` | DeploySense backend URL | `https://your-backend.onrender.com` |
+| `ALERT_EMAIL` | **Your team email address** (DeploySense sends AI diagnostic alerts directly here!) | `developer@your-company.com` |
 | `SERVICE_NAME` | Your service name (shows in dashboard) | `payment-service` |
 | `ENVIRONMENT` | Deployment environment | `production`, `staging` |
 | `APP_VERSION` | Your app version | `v2.1.0` |
