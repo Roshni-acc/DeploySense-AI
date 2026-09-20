@@ -28,8 +28,10 @@ This guide provides step-by-step instructions for deploying both the **DeploySen
 
 ## ⚙️ Step 2: Deploy Backend to Render.com (Free Web Service)
 
+This repository includes a [`render.yaml`](./render.yaml) Blueprint for the backend. In Render, choose **New +** → **Blueprint** and connect the repository. Render will detect the Blueprint and create the free web service with the correct root directory, health check, build command, and start command.
+
 1. Sign up/log in at [Render.com](https://render.com).
-2. Click **New +** ➔ Select **Web Service**.
+2. Click **New +** ➔ Select **Blueprint** (or choose **Web Service** for manual setup).
 3. Connect your GitHub repository: `DeploySense-AI`.
 4. Fill in the service configuration:
    - **Name**: `deploysense-backend`
@@ -37,17 +39,17 @@ This guide provides step-by-step instructions for deploying both the **DeploySen
    - **Branch**: `main`
    - **Root Directory**: `backend`
    - **Runtime**: `Node`
-   - **Build Command**:
+   - **Build Command** (configured automatically by the Blueprint):
      ```bash
-     npm install && npx prisma generate && npx prisma db push && npm run build
+     npm ci && npx prisma generate && npx prisma db push && npm run build
      ```
-   - **Start Command**:
+   - **Start Command** (configured automatically by the Blueprint):
      ```bash
      npm run start:prod
      ```
    - **Instance Type**: Select **Free** (512 MB RAM).
 
-5. Scroll down to **Environment Variables** and add the following keys:
+5. Scroll down to **Environment Variables** and add the following keys. The Blueprint marks secrets as `sync: false`, so Render will prompt for them without storing values in Git:
    | Key | Value | Description |
    | :--- | :--- | :--- |
    | `DATABASE_URL` | `postgresql://...` *(from Step 1)* | Managed Postgres URI |
