@@ -43,7 +43,7 @@ export default function App() {
   const [testLogStatus, setTestLogStatus] = useState<string | null>(null);
   const [showSdkModal, setShowSdkModal] = useState(false);
 
-  const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || 'https://deploysense-ai.onrender.com/api/v1';
+  const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:3001/api/v1' : 'https://deploysense-ai.onrender.com/api/v1');
 
   const fetchIncidents = async () => {
     setLoading(true);

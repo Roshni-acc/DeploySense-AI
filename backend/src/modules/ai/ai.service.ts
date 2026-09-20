@@ -20,7 +20,7 @@ export class AiService {
     const apiKey = this.configService.get<string>('GEMINI_API_KEY');
     if (apiKey && apiKey !== 'your_gemini_api_key_here' && apiKey.trim().length > 5) {
       this.aiClient = new GoogleGenerativeAI(apiKey);
-      this.logger.log('Google Gemini AI client initialized.');
+      this.logger.log('Google Gemini AI client initialized with this.');
     } else {
       this.logger.log('ℹ️ Local development mode: DeploySense Intelligent Analysis Engine active.');
     }

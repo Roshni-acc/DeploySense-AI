@@ -1,3 +1,4 @@
+import { transientIncidentsStore } from '../logs/logs.service';
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -9,16 +10,17 @@ export class IncidentsService {
 
   async getAllIncidents() {
     try {
-      return await this.prisma.incident.findMany({
+      const dbIncidents = await this.prisma.incident.findMany({
         orderBy: { createdAt: 'desc' },
         include: {
           deployment: true,
           notifications: true,
         },
       });
+      return [...transientIncidentsStore, ...dbIncidents];
     } catch (e) {
-      this.logger.warn(`Database unavailable for query, returning empty incidents list: ${e.message}`);
-      return [];
+      this.logger.warn(`Database unavailable for query, returning transient incidents list: ${e.message}`);
+      return transientIncidentsStore;
     }
   }
 
@@ -52,6 +54,11 @@ export class IncidentsService {
   }
 
   async getIncidentMetrics() {
+    const tTotal = transientIncidentsStore.length;
+    const tOpen = transientIncidentsStore.filter(i => i.status === 'OPEN').length;
+    const tResolved = transientIncidentsStore.filter(i => i.status === 'RESOLVED' || i.status === 'CLOSED').length;
+    const tCritical = transientIncidentsStore.filter(i => i.severity === 'CRITICAL' || i.severity === 'HIGH').length;
+
     try {
       const totalIncidents = await this.prisma.incident.count();
       const openIncidents = await this.prisma.incident.count({ where: { status: 'OPEN' } });
@@ -59,17 +66,17 @@ export class IncidentsService {
       const criticalIncidents = await this.prisma.incident.count({ where: { severity: 'CRITICAL' } });
 
       return {
-        totalIncidents,
-        openIncidents,
-        resolvedIncidents,
-        criticalIncidents,
+        totalIncidents: totalIncidents + tTotal,
+        openIncidents: openIncidents + tOpen,
+        resolvedIncidents: resolvedIncidents + tResolved,
+        criticalIncidents: criticalIncidents + tCritical,
       };
     } catch (e) {
       return {
-        totalIncidents: 0,
-        openIncidents: 0,
-        resolvedIncidents: 0,
-        criticalIncidents: 0,
+        totalIncidents: tTotal,
+        openIncidents: tOpen,
+        resolvedIncidents: tResolved,
+        criticalIncidents: tCritical,
       };
     }
   }

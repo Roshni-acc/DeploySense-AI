@@ -10,6 +10,8 @@ export class IncidentsController {
     return this.incidentsService.getAllIncidents();
   }
 
+  
+
   @Get('metrics')
   async getMetrics() {
     return this.incidentsService.getIncidentMetrics();

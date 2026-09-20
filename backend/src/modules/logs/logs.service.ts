@@ -1,3 +1,4 @@
+export const transientIncidentsStore: any[] = [];
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AiService } from '../ai/ai.service';
@@ -123,6 +124,7 @@ export class LogsService {
           createdAt: new Date(),
         };
 
+        transientIncidentsStore.unshift(incidentReport);
         notificationResults = await this.notificationsService.dispatchIncidentAlerts(incidentReport as any, dto.recipientEmail);
       }
     } else {
