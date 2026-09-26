@@ -67,14 +67,14 @@ This guide provides step-by-step instructions for deploying both the **DeploySen
 
 ---
 
-## ⏰ Preventing Render Free-Tier Sleep (Automated 7-Min Heartbeat)
+## ⏰ Preventing Render Free-Tier Sleep (Automated 10-Min Heartbeat)
 
 Render's free-tier web services automatically sleep after 15 minutes of inactivity, causing 30-50 second cold start delays on new requests.
 
 **DeploySense includes a built-in Dual-Layer Keep-Alive Engine to prevent sleeping:**
-1. **Automated Backend Self-Ping (`KeepAliveService`)**: Every 7 minutes (`7 * 60 * 1000 ms`), the NestJS backend automatically pings `https://deploysense-ai.onrender.com/api/v1/health`. Render provides `RENDER_EXTERNAL_URL` automatically, keeping the instance 100% active 24/7 without external cron services.
-2. **Frontend Heartbeat**: The React frontend dashboard automatically sends a silent heartbeat to `/api/v1/health` every 7 minutes when open in the browser.
-3. **Dedicated Health Endpoint**: `GET /api/v1/health` returns server health status, uptime, and timestamps. You can also configure [UptimeRobot](https://uptimerobot.com) or [Cron-job.org](https://cron-job.org) to ping `https://deploysense-ai.onrender.com/api/v1/health` every 7 minutes for triple redundancy.
+1. **Automated Backend Self-Ping (`KeepAliveService`)**: Every 10 minutes (`10 * 60 * 1000 ms`), the NestJS backend automatically pings `https://deploysense-ai.onrender.com/api/v1/health`. Render provides `RENDER_EXTERNAL_URL` automatically, keeping the instance 100% active 24/7 without external cron services.
+2. **Frontend Heartbeat**: The React frontend dashboard automatically sends a silent heartbeat to `/api/v1/health` every 10 minutes when open in the browser.
+3. **Dedicated Health Endpoint**: `GET /api/v1/health` returns server health status, uptime, and timestamps. You can also configure [UptimeRobot](https://uptimerobot.com) or [Cron-job.org](https://cron-job.org) to ping `https://deploysense-ai.onrender.com/api/v1/health` every 10 minutes for triple redundancy.
 
 ---
 

@@ -11,15 +11,15 @@ export class KeepAliveService implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly configService: ConfigService) { }
 
   onModuleInit() {
-    // Self-ping interval every 7 minutes (420,000 ms) to prevent Render free instance from sleeping
-    const PING_INTERVAL_MS = 7 * 60 * 1000;
+    // Self-ping interval every 10 minutes (600,000 ms) to prevent Render free instance from sleeping
+    const PING_INTERVAL_MS = 10 * 60 * 1000;
 
-    this.logger.log('⏰ Render Keep-Alive Self-Ping Engine initialized (7-minute heartbeat).');
+    this.logger.log('⏰ Render Keep-Alive Self-Ping Engine initialized (10-minute heartbeat).');
 
     // Initial ping 10 seconds after server boot
     setTimeout(() => this.pingServer(), 10000);
 
-    // Recurring 7-minute interval timer
+    // Recurring 10-minute interval timer
     this.timer = setInterval(() => {
       this.pingServer();
     }, PING_INTERVAL_MS);
@@ -42,7 +42,7 @@ export class KeepAliveService implements OnModuleInit, OnModuleDestroy {
       ? targetUrl
       : `${targetUrl.replace(/\/$/, '')}/api/v1/health`;
 
-    this.logger.log(`📡 [Keep-Alive Engine] Sending 7-min heartbeat ping to ${healthEndpoint}...`);
+    this.logger.log(`📡 [Keep-Alive Engine] Sending 10-min heartbeat ping to ${healthEndpoint}...`);
 
     try {
       const client = healthEndpoint.startsWith('https') ? https : http;
