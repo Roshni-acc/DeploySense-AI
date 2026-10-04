@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import { Test, TestingModule } from '@nestjs/testing';
 import { LogsController, GitHubWebhookController } from './logs.controller';
 import { LogsService } from './logs.service';
