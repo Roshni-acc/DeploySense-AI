@@ -8,7 +8,7 @@
     "allowSyntheticDefaultImports": true,
     "target": "ES2021",
     "sourceMap": true,
-    "types": ["node", "jest"],
+    "types": ["node"],
     "outDir": "./dist",
     "rootDir": "./src",
     "incremental": true,
