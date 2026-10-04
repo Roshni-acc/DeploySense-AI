@@ -1,25 +1,25 @@
 {
-"compilerOptions": {
-"module": "commonjs",
-"declaration": true,
-"removeComments": true,
-"emitDecoratorMetadata": true,
-"experimentalDecorators": true,
-"allowSyntheticDefaultImports": true,
-"target": "ES2021",
-"sourceMap": true,
-"types": ["node"],
-"outDir": "./dist",
-"rootDir": "./src",
-"incremental": true,
-"skipLibCheck": true,
-"strictNullChecks": false,
-"noImplicitAny": false,
-"strictBindCallApply": false,
-"forceConsistentCasingInFileNames": false,
-"noFallthroughCasesInSwitch": false,
-"useUnknownInCatchVariables": false
-},
-"include": ["src/**/*.ts"],
-"exclude": ["node_modules", "dist"]
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2021",
+    "sourceMap": true,
+    "types": ["node", "jest"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "forceConsistentCasingInFileNames": false,
+    "noFallthroughCasesInSwitch": false,
+    "useUnknownInCatchVariables": false
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts"]
 }

@@ -442,10 +442,10 @@ jobs:
   const isFixed = (inc: Incident) => inc.status === 'CLOSED' || inc.status === 'RESOLVED';
 
   return (
-    <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
+    <div className="app-container">
       {/* HEADER BAR */}
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <header className="app-header">
+        <div className="header-brand">
           <div style={{ padding: '12px', background: 'rgba(0,242,254,0.1)', borderRadius: '16px', border: '1px solid rgba(0,242,254,0.3)' }}>
             <Cpu size={32} color="#00f2fe" />
           </div>
@@ -457,7 +457,7 @@ jobs:
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div className="header-actions">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '30px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', fontSize: '0.85rem' }}>
             <span className="pulse-dot"></span>
             <span>Gemini AI Engine Active</span>
@@ -525,7 +525,7 @@ jobs:
       </header>
 
       {/* OVERVIEW STATS GRID */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+      <div className="stats-grid">
         <div className="glass-panel" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
             <span>Total Incidents</span>
@@ -562,7 +562,7 @@ jobs:
             <span>Alert Channels</span>
             <Terminal size={18} color="#4facfe" />
           </div>
-          <div style={{ fontSize: '1.2rem', fontWeight: 600, marginTop: '8px', display: 'flex', gap: '8px' }}>
+          <div style={{ fontSize: '1.2rem', fontWeight: 600, marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <span className="badge badge-success">Email Direct</span>
             <span className="badge badge-low">CC / BCC</span>
           </div>
@@ -581,7 +581,7 @@ jobs:
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
+        <div className="sim-grid">
           {simButtons.map(({ type, label, sublabel, icon: Icon, color, bg, border }) => {
             const isRunning = simulatingType === type;
             const anyRunning = simulatingType !== null;
@@ -623,8 +623,8 @@ jobs:
       </div>
 
       {/* COMPACT INTEGRATION BAR (Secondary shortcut trigger) */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', padding: '10px 18px', borderRadius: '12px', background: 'rgba(168, 85, 247, 0.08)', border: '1px solid rgba(168, 85, 247, 0.2)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div className="integration-bar">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
           <Code2 size={16} color="#a855f7" />
           <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#e9d5ff' }}>Connect Your External Project</span>
           <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>— Integration code snippets for Node.js, Python, Go &amp; cURL</span>
@@ -633,7 +633,7 @@ jobs:
           id="open-sdk-modal-bar-btn"
           onClick={() => setShowSdkModal(true)}
           style={{
-            padding: '5px 12px',
+            padding: '6px 14px',
             borderRadius: '8px',
             background: 'rgba(168, 85, 247, 0.2)',
             color: '#fff',
@@ -653,14 +653,14 @@ jobs:
 
       {/* INCIDENTS TABLE WITH SUB-TABS FILTER */}
       <div className="glass-panel" style={{ padding: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
+        <div className="incidents-header">
           <h2 style={{ fontSize: '1.2rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
             <AlertTriangle size={20} color="#f97316" /> Detected Incidents
             {loading && <Loader2 size={16} color="var(--text-muted)" style={{ animation: 'spin 1s linear infinite', marginLeft: '8px' }} />}
           </h2>
 
           {/* SUB-TABS CATEGORY FILTER */}
-          <div style={{ display: 'flex', gap: '8px', background: 'rgba(0,0,0,0.3)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+          <div className="filter-tabs">
             <button
               id="tab-filter-all"
               onClick={() => setActiveCategoryTab('ALL')}
@@ -715,7 +715,7 @@ jobs:
           </div>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
+        <div className="table-responsive">
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
@@ -861,8 +861,8 @@ jobs:
 
       {/* AI DIAGNOSTICS MODAL */}
       {selectedIncident && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 100, padding: '24px' }}>
-          <div className="glass-panel" style={{ width: '100%', maxWidth: '750px', maxHeight: '90vh', overflowY: 'auto', padding: '32px', borderRadius: '20px', background: '#0e1320' }}>
+        <div className="modal-overlay">
+          <div className="modal-content glass-panel">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -1003,8 +1003,8 @@ jobs:
 
       {/* UNIVERSAL MULTI-LANGUAGE INTEGRATION SDK MODAL */}
       {showSdkModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 100, padding: '24px' }}>
-          <div className="glass-panel" style={{ width: '100%', maxWidth: '780px', maxHeight: '90vh', overflowY: 'auto', padding: '28px', borderRadius: '20px', background: '#0e1320' }}>
+        <div className="modal-overlay">
+          <div className="modal-content glass-panel">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
               <div>
                 <h3 style={{ fontSize: '1.3rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
